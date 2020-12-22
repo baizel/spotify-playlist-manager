@@ -10,6 +10,8 @@ cache = Cache(config={'CACHE_TYPE': 'simple'})
 
 scope = "user-library-read"
 
+LIKED_SONGS_ID = "myplaylistid"
+
 REDIRECT_URI = 'http://127.0.0.1:5000/callback'
 CLIENT_ID = '05e5055c73a74eb8b8f536e3a2e5a3ac'
 CLIENT_SECRET = '843776a768bf4b3bb08181252c4c624f'
@@ -118,7 +120,7 @@ def get_token(sess) -> Tuple[any, bool]:
 
 @cache.cached(timeout=60 * 5, key_prefix='allPlaylists')
 def getData():
-    res = []
+    res = [{"name": "Liked Songs", "id": LIKED_SONGS_ID, "image": {"url": "/static/image.jpg"}}]
     tokenInfo, isValid = get_token(session)
     sp = spotipy.Spotify(auth=tokenInfo.get('access_token'))
     playlists = sp.current_user_playlists()
@@ -138,7 +140,11 @@ def getData():
 def getPlayListTracks(id):
     tokenInfo, _ = get_token(session)
     sp = spotipy.Spotify(auth=tokenInfo.get('access_token'))
-    tracks = sp.playlist_items(id)
+    print(id)
+    if id == LIKED_SONGS_ID:
+        tracks = sp.current_user_saved_tracks()
+    else:
+        tracks = sp.playlist_items(id)
     res = []
     while tracks:
         for i, track in enumerate(tracks['items']):

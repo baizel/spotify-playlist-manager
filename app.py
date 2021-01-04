@@ -64,26 +64,28 @@ def manager():
 
 @app.route('/playlist', methods=['POST'])
 def getTracks():
-    result = {"result": []}
+    result = {"data": [], "columns": []}
     build = {}  # schema {"songId": {"playlists": [{"id": "name"}], "name": "songName", "artist": "artistName"} }
+    print(request.data)
     data = json.loads(request.data)
     duplicateRemoved = [dict(t) for t in {tuple(d.items()) for d in data}]
-
+    columns = [{"title": "Song", "data": "Song"}, {"title": "Artist", "data": "Artist"}]
     # TODO: Optimize this
     for playlist in duplicateRemoved:
+        columns.append({"title": playlist['name'], "data": playlist['name']})
         tracks = getPlayListTracks(playlist['id'])
         for track in tracks:
             if build.get(track['id']) is None:
                 build[track['id']] = {**{"playlists": [playlist['name']]}, **track}
             else:
                 build[track['id']]['playlists'].append(playlist['name'])
-
     for songId in build.keys():
         ret = {"Song": build[songId]['name'], "Artist": build[songId]['artist']}
         for playlist in duplicateRemoved:
             ret[playlist['name']] = True if playlist['name'] in build[songId]['playlists'] else False
-        result['result'].append(ret)
-
+        result['data'].append(ret)
+    result['columns'] = columns
+    print(json.dumps(result))
     return result, 200
 
 

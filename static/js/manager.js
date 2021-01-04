@@ -1,3 +1,5 @@
+const SONG_TABLE_ID = "songTable"
+const SONG_TABLE_CONTAINER_ID = "tableContainer"
 let chosenPlaylists = [];
 let storedData = {}
 
@@ -56,16 +58,29 @@ function buildTableHtml(tableId, data) {
     return table;
 }
 
-
 async function updateTable(id, name) {
     chosenPlaylists.push({id, name})
     await getPlaylistTracks(chosenPlaylists, (data) => {
         storedData = data;
-        let table = buildTableHtml('songTable', data.result)
-        let anchor = document.getElementById('songTable')
-        anchor.parentNode.replaceChild(table, anchor);
-    })
+        let options = {
+            "ordering": false,
+            "paging": false
+            // "createdRow": function (row, data, index) {
+            //     if (data[5].replace(/[\$,]/g, '') * 1 > 150000) {
+            //         $('td', row).eq(5).addClass('highlight');
+            //     }
+            // },
+        }
 
+        const optionWithData = Object.assign(options, storedData)
+        if ($.fn.DataTable.isDataTable(prefixHash(SONG_TABLE_ID))) {
+            //clear old data table
+            const dtApi = $(prefixHash(SONG_TABLE_ID)).DataTable();
+            dtApi.destroy();
+            document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML = `<table id="${SONG_TABLE_ID}"> -</table>`
+        }
+        $(prefixHash(SONG_TABLE_ID)).DataTable(optionWithData);
+    })
 
 }
 
@@ -73,4 +88,8 @@ async function getPlaylistTracks(playlists, callback) {
     fetch(`/playlist`, {method: 'post', body: JSON.stringify(playlists)})
         .then(response => response.json())
         .then(callback);
+}
+
+function prefixHash(val) {
+    return '#' + val;
 }

@@ -59,7 +59,7 @@ def callback():
 
 @app.route('/manager')
 def manager():
-    return render_template('manager.html', data=getData())
+    return render_template('manager.html', data=getAllPlaylists())
 
 
 @app.route('/playlist', methods=['POST'])
@@ -80,7 +80,7 @@ def getTracks():
             else:
                 build[track['id']]['playlists'].append(playlist['name'])
     for songId in build.keys():
-        ret = {"Song": build[songId]['name'], "Artist": build[songId]['artist']}
+        ret = {"Song": build[songId].pop('name'), "Artist": build[songId].pop('artist'), **build[songId]}
         for playlist in duplicateRemoved:
             ret[playlist['name']] = True if playlist['name'] in build[songId]['playlists'] else False
         result['data'].append(ret)
@@ -121,16 +121,16 @@ def get_token(sess) -> Tuple[any, bool]:
 
 
 @cache.cached(timeout=60 * 5, key_prefix='allPlaylists')
-def getData():
+def getAllPlaylists():
     res = [{"name": "Liked Songs", "id": LIKED_SONGS_ID, "image": {"url": "/static/image.jpg"}}]
     tokenInfo, isValid = get_token(session)
     sp = spotipy.Spotify(auth=tokenInfo.get('access_token'))
     playlists = sp.current_user_playlists()
     while playlists:
         for i, playlist in enumerate(playlists['items']):
-            print(playlist)
+            # print(playlist)
             if len(playlist['images']) > 0:
-                res.append({"name": playlist['name'], "id": playlist['id'], "image": playlist['images'][0]})
+                res.append({"name": stripChars(playlist['name']), "id": playlist['id'], "image": playlist['images'][0]})
         if playlists['next']:
             playlists = sp.next(playlists)
         else:
@@ -138,11 +138,16 @@ def getData():
     return res
 
 
+def stripChars(val):
+    val = val.replace(".", "")
+    val = val.replace(",", "")
+    return val
+
+
 @cache.memoize(timeout=60 * 5)
 def getPlayListTracks(id):
     tokenInfo, _ = get_token(session)
     sp = spotipy.Spotify(auth=tokenInfo.get('access_token'))
-    print(id)
     if id == LIKED_SONGS_ID:
         tracks = sp.current_user_saved_tracks()
     else:
@@ -150,9 +155,12 @@ def getPlayListTracks(id):
     res = []
     while tracks:
         for i, track in enumerate(tracks['items']):
-            if track.get('track') is not None and track['track']['type'] == 'track':
+            if track.get('track') is not None and track['track']['type'] == 'track' and track['track']['album'][
+                "album_type"] is not None:
                 data = {"id": track['track']['id'], "name": track['track']['name'],
                         "artist": track['track']['artists'][0]['name']}
+                if track['track'].get('album') is not None:
+                    data["images"] = track['track']['album']['images']
                 res.append(data)
         if tracks['next']:
             tracks = sp.next(tracks)

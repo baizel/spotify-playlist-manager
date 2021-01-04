@@ -12,3 +12,10 @@ header, main, footer {
 .sidenav li > a {
     overflow: hidden;
 }
+
+.added-playlist {
+    background: lightgray !important;
+}
+.song-name {
+    padding-left: 3px;
+}

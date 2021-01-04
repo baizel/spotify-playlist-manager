@@ -1,7 +1,12 @@
 const SONG_TABLE_ID = "songTable"
 const SONG_TABLE_CONTAINER_ID = "tableContainer"
+let initTableHTML = undefined
 let chosenPlaylists = [];
 let storedData = {}
+
+window.onload = function () {
+    initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
+}
 
 function removeItemOnce(arr, value) {
     let index = arr.indexOf(value);
@@ -59,17 +64,23 @@ function buildTableHtml(tableId, data) {
 }
 
 async function updateTable(id, name) {
-    chosenPlaylists.push({id, name})
+    toggleToList({id, name})
     await getPlaylistTracks(chosenPlaylists, (data) => {
         storedData = data;
         let options = {
-            "ordering": false,
-            "paging": false
-            // "createdRow": function (row, data, index) {
-            //     if (data[5].replace(/[\$,]/g, '') * 1 > 150000) {
-            //         $('td', row).eq(5).addClass('highlight');
-            //     }
-            // },
+            "ordering": true,
+            "order": [],
+            "paging": false,
+            "createdRow": function (row, data, index) {
+                const src = data.images[2] ? data.images[2].url :""
+                  let imgHTML = `<div class="valign-wrapper">
+                                    <img src="${src}" alt="album art" class="circle" height="32">
+                                    <span class="song-name">${data.Song}</span>
+                                </div>`
+                $('td:eq(0)', row).html(imgHTML);
+            },
+            "rowCallback": function (row, data, displayNum, displayIndex, dataIndex) {
+            },
         }
 
         const optionWithData = Object.assign(options, storedData)
@@ -77,7 +88,7 @@ async function updateTable(id, name) {
             //clear old data table
             const dtApi = $(prefixHash(SONG_TABLE_ID)).DataTable();
             dtApi.destroy();
-            document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML = `<table id="${SONG_TABLE_ID}"> -</table>`
+            document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML = initTableHTML;
         }
         $(prefixHash(SONG_TABLE_ID)).DataTable(optionWithData);
     })
@@ -88,6 +99,19 @@ async function getPlaylistTracks(playlists, callback) {
     fetch(`/playlist`, {method: 'post', body: JSON.stringify(playlists)})
         .then(response => response.json())
         .then(callback);
+}
+
+function toggleToList(playlist) {
+    let isPlaylistAlreadyChosen = chosenPlaylists.some(plst => plst.id === playlist.id)
+    if (isPlaylistAlreadyChosen) {
+        chosenPlaylists = chosenPlaylists.filter(function (el) {
+            return el.id !== playlist.id;
+        })
+        document.getElementById(playlist.id).classList.remove("added-playlist");
+    } else {
+        chosenPlaylists.push(playlist)
+        document.getElementById(playlist.id).classList.add("added-playlist");
+    }
 }
 
 function prefixHash(val) {

@@ -72,7 +72,7 @@ def getTracks():
     columns = [{"title": "Song", "data": "Song"}, {"title": "Artist", "data": "Artist"}]
     # TODO: Optimize this
     for playlist in duplicateRemoved:
-        columns.append({"title": playlist['name'], "data": playlist['name']})
+        columns.append({"title": playlist['name'], "data": playlist['name'], "id":playlist['id']})
         tracks = getPlayListTracks(playlist['id'])
         for track in tracks:
             if build.get(track['id']) is None:

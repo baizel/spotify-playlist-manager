@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from flask import Flask, render_template, session, request, redirect, Response, jsonify
 from spotipy.oauth2 import SpotifyOAuth
 from flask_caching import Cache
@@ -66,13 +68,13 @@ def manager():
 def getTracks():
     result = {"data": [], "columns": []}
     build = {}  # schema {"songId": {"playlists": [{"id": "name"}], "name": "songName", "artist": "artistName"} }
-    print(request.data)
+    # print(request.data)
     data = json.loads(request.data)
     duplicateRemoved = [dict(t) for t in {tuple(d.items()) for d in data}]
     columns = [{"title": "Song", "data": "Song"}, {"title": "Artist", "data": "Artist"}]
     # TODO: Optimize this
     for playlist in duplicateRemoved:
-        columns.append({"title": playlist['name'], "data": playlist['name'], "id":playlist['id']})
+        columns.append({"title": playlist['name'], "data": playlist['name'], "id": playlist['id']})
         tracks = getPlayListTracks(playlist['id'])
         for track in tracks:
             if build.get(track['id']) is None:
@@ -85,6 +87,7 @@ def getTracks():
             ret[playlist['name']] = True if playlist['name'] in build[songId]['playlists'] else False
         result['data'].append(ret)
     result['columns'] = columns
+    result['data'] = getTrackFeatures(result['data'])
     print(json.dumps(result))
     return result, 200
 
@@ -168,6 +171,28 @@ def getPlayListTracks(id):
             tracks = None
     return res
 
+def getTrackFeatures(tracks):
+    tokenInfo, _ = get_token(session)
+    sp = spotipy.Spotify(auth=tokenInfo.get('access_token'))
+    trackChunks = chunks(tracks,100)
+    allFeatures = []
+    for chunk in trackChunks:
+        trackIds = [track['id'] for track in chunk]
+        allFeatures = allFeatures + sp.audio_features(trackIds)
+    return mergeDicts(tracks,allFeatures)
+
+
+def mergeDicts(d1,d2):
+    d = defaultdict(dict)
+    for l in (d1, d2):
+        for elem in l:
+            d[elem['id']].update(elem)
+    return list(d.values())
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
 
 if __name__ == '__main__':
     app.run()

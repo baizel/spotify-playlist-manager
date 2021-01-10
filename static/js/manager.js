@@ -3,64 +3,10 @@ const SONG_TABLE_CONTAINER_ID = "tableContainer"
 let initTableHTML = undefined
 let chosenPlaylists = [];
 let storedData = {}
+const EXTRA_LAST_COLUMNS = 4
 
 window.onload = function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
-}
-
-function removeItemOnce(arr, value) {
-    let index = arr.indexOf(value);
-    if (index > -1) {
-        arr.splice(index, 1);
-    }
-    return arr;
-}
-
-function addHeaders(table, keys) {
-    removeItemOnce(keys, 'Song');
-    removeItemOnce(keys, 'Artist');
-    let headerText = ["Song", "Artist", ...keys]
-    let header = table.createTHead();
-    let row = header.insertRow();
-    for (let i = 0; i < headerText.length; i++) {
-        let th = document.createElement('th');
-        th.innerHTML = headerText[i];
-        row.appendChild(th);
-    }
-    return headerText
-}
-
-function addTableBody(table, child, headers) {
-    let tbody = document.createElement('tbody');
-    let row = tbody.insertRow();
-    headers.forEach(function (k) {
-        let element;
-        let cell = row.insertCell();
-        if (k === "Song" || k === "Artist") {
-            element = document.createElement('p');
-            element.innerHTML = child[k];
-        } else {
-            element = document.createElement('i');
-            element.className = 'material-icons center'
-            element.innerHTML = Boolean(child[k]) ? "check" : "clear"
-        }
-        cell.appendChild(element);
-    });
-    table.appendChild(tbody);
-}
-
-function buildTableHtml(tableId, data) {
-    let table = document.createElement('table');
-    table.id = tableId;
-    let headers = []
-    for (let i = 0; i < data.length; i++) {
-        let child = data[i];
-        if (i === 0) {
-            headers = addHeaders(table, Object.keys(child));
-        }
-        addTableBody(table, child, headers);
-    }
-    return table;
 }
 
 async function updateTable(id, name) {
@@ -75,7 +21,7 @@ async function updateTable(id, name) {
                 const imageUrl = data.images[2] ? data.images[2].url : "";
                 const songName = data.Song;
                 formatSongColumn(row, 0, imageUrl, songName);
-                for (let i = 2; i < storedData.columns.length; i++) {
+                for (let i = 2; i < storedData.columns.length - EXTRA_LAST_COLUMNS; i++) {
                     let payload = {
                         songId: data.id,
                         playlistId: storedData.columns[i].id
@@ -89,6 +35,10 @@ async function updateTable(id, name) {
         }
 
         const optionWithData = Object.assign(options, storedData)
+        optionWithData.columns.push({title: 'BPM', data: 'tempo'})
+        optionWithData.columns.push({title: 'Danceability', data: 'danceability'})
+        optionWithData.columns.push({title: 'Energy', data: 'energy'})
+        optionWithData.columns.push({title: 'Instrument', data: 'instrumentalness'})
         if ($.fn.DataTable.isDataTable(prefixHash(SONG_TABLE_ID))) {
             //clear old data table
             const dtApi = $(prefixHash(SONG_TABLE_ID)).DataTable();
@@ -111,7 +61,6 @@ function formatSongColumn(row, columnIndex, imageUrl, songName) {
 function formatCheckboxColumns(row, columnIndex, payload, isChecked) {
     let isCheckedAttr = isChecked ? "checked" : "";
     let pld = JSON.stringify(payload);
-    console.log(pld);
     let checkbox = `<label>
                         <input type="checkbox" ${isCheckedAttr} onclick='handleCheckbox(this, ${pld})'>
                         <span></span>

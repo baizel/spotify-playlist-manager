@@ -25,23 +25,33 @@
     {% include 'components/nav.html' %}
     <p> click a play list </p>
     <div class="container">
+        <div id="filterPanel">
+            <a class="waves-effect waves-light modal-trigger" href="#modal1"> <i class="small material-icons">add_circle_outline</i></a>
+        </div>
         <div id="tableContainer">
             <table id="songTable" class="highlight">
-                {#            <thead>#}
-                {#            <tr>#}
-                {#                <th>Song</th>#}
-                {#                <th>Artist</th>#}
-                {##}
-                {#            </tr>#}
-                {#            </thead>#}
-                {##}
-                {#            <tbody>#}
-                {#            <tr>#}
-                {#                <td>Choose a playlist to get started</td>#}
-                {#                <td>Choose a playlist to get started</td>#}
-                {#            </tr>#}
-                {#            </tbody>#}
             </table>
+        </div>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="modal1" class="modal">
+        <div class="modal-content">
+            <h4>Audio feature columns</h4>
+            <form action="#">
+                {% for name,apiName in filter.items() %}
+                    <p>
+                        <label>
+                            <input name="filterCheckbox" value="{{ name }}" id="{{ apiName }}" type="checkbox"/>
+                            <span>{{ name }}</span>
+                        </label>
+                    </p>
+                {% endfor %}
+
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat" onclick='handleFilterChange()'>Save</a>
         </div>
     </div>
 

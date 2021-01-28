@@ -13,6 +13,9 @@ cache = Cache(config={'CACHE_TYPE': 'simple'})
 scope = "user-library-read"
 
 LIKED_SONGS_ID = "myplaylistid"
+FILTERABLE = {"BPM": "tempo", "Danceability": "danceability", "Energy": "energy",
+              "Instrumentalness": "instrumentalness", "Liveness": "liveness", "Loudness": "loudness",
+              "Speechiness": "speechiness", "Positiveness ": "valence"}
 
 REDIRECT_URI = 'http://127.0.0.1:5000/callback'
 CLIENT_ID = '05e5055c73a74eb8b8f536e3a2e5a3ac'
@@ -61,7 +64,7 @@ def callback():
 
 @app.route('/manager')
 def manager():
-    return render_template('manager.html', data=getAllPlaylists())
+    return render_template('manager.html', data=getAllPlaylists(), filter=FILTERABLE)
 
 
 @app.route('/playlist', methods=['POST'])
@@ -171,28 +174,31 @@ def getPlayListTracks(id):
             tracks = None
     return res
 
+
 def getTrackFeatures(tracks):
     tokenInfo, _ = get_token(session)
     sp = spotipy.Spotify(auth=tokenInfo.get('access_token'))
-    trackChunks = chunks(tracks,100)
+    trackChunks = chunks(tracks, 100)
     allFeatures = []
     for chunk in trackChunks:
         trackIds = [track['id'] for track in chunk]
         allFeatures = allFeatures + sp.audio_features(trackIds)
-    return mergeDicts(tracks,allFeatures)
+    return mergeDicts(tracks, allFeatures)
 
 
-def mergeDicts(d1,d2):
+def mergeDicts(d1, d2):
     d = defaultdict(dict)
     for l in (d1, d2):
         for elem in l:
             d[elem['id']].update(elem)
     return list(d.values())
 
+
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
+
 
 if __name__ == '__main__':
     app.run()

@@ -3,7 +3,7 @@
         <ul>
             <li><a class="subheader center">Your playlists</a></li>
             {% for playlist in data %}
-                <li class="collection-item avatar" id="{{ playlist.id }}" onclick="updateTable('{{ playlist.id }}','{{ playlist.name }}')">
+                <li class="collection-item avatar" id="{{ playlist.id }}" onclick="toggleAndUpdateTable('{{ playlist.id }}','{{ playlist.name }}')">
                     <img src="{{ playlist.image.url }}" alt="" class="circle">
                     <p>{{ playlist.name }}</p>
                 </li>

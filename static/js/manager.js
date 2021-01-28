@@ -1,16 +1,34 @@
 const SONG_TABLE_ID = "songTable"
 const SONG_TABLE_CONTAINER_ID = "tableContainer"
+const SKIPPED_COLUMNS = 2;
 let initTableHTML = undefined
 let chosenPlaylists = [];
 let storedData = {}
-const EXTRA_LAST_COLUMNS = 4
+let filterOptions = [];
+
 
 window.onload = function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
+    let modalElem = document.querySelectorAll('.modal');
+    let modalInstance = M.Modal.init(modalElem, {});
 }
 
-async function updateTable(id, name) {
-    toggleToList({id, name})
+async function handleFilterChange() {
+    let checkboxes = document.querySelectorAll('input[name="filterCheckbox"]:checked');
+    filterOptions = [];
+    Array.prototype.forEach.call(checkboxes, function (el) {
+        filterOptions.push({title: el.value, data: el.id});
+    });
+    await updateTable();
+}
+
+async function toggleAndUpdateTable(id, name) {
+    toggleToList({id, name});
+    await updateTable();
+
+}
+
+async function updateTable() {
     await getPlaylistTracks(chosenPlaylists, (data) => {
         storedData = data;
         let options = {
@@ -21,7 +39,7 @@ async function updateTable(id, name) {
                 const imageUrl = data.images[2] ? data.images[2].url : "";
                 const songName = data.Song;
                 formatSongColumn(row, 0, imageUrl, songName);
-                for (let i = 2; i < storedData.columns.length - EXTRA_LAST_COLUMNS; i++) {
+                for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - filterOptions.length; i++) {
                     let payload = {
                         songId: data.id,
                         playlistId: storedData.columns[i].id
@@ -35,10 +53,7 @@ async function updateTable(id, name) {
         }
 
         const optionWithData = Object.assign(options, storedData)
-        optionWithData.columns.push({title: 'BPM', data: 'tempo'})
-        optionWithData.columns.push({title: 'Danceability', data: 'danceability'})
-        optionWithData.columns.push({title: 'Energy', data: 'energy'})
-        optionWithData.columns.push({title: 'Instrument', data: 'instrumentalness'})
+        optionWithData.columns.push(...filterOptions)
         if ($.fn.DataTable.isDataTable(prefixHash(SONG_TABLE_ID))) {
             //clear old data table
             const dtApi = $(prefixHash(SONG_TABLE_ID)).DataTable();
@@ -47,7 +62,6 @@ async function updateTable(id, name) {
         }
         $(prefixHash(SONG_TABLE_ID)).DataTable(optionWithData);
     })
-
 }
 
 function formatSongColumn(row, columnIndex, imageUrl, songName) {

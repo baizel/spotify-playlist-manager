@@ -89,7 +89,7 @@ function handleCheckbox(target, payload) {
 }
 
 async function getPlaylistTracks(playlists, callback) {
-    fetch(`/playlist`, {method: 'post', body: JSON.stringify(playlists)})
+    fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists)})
         .then(response => response.json())
         .then(callback);
 }

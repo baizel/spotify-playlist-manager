@@ -1,0 +1,20 @@
+<div id="modal1" class="modal">
+    <div class="modal-content">
+        <h4>Audio feature columns</h4>
+        <form action="#">
+            {% for name,options in filter.items() %}
+                <p>
+                    <label>
+                        <input name="filterCheckbox" value="{{ name }}" id="{{ options.apiName }}" type="checkbox"
+                                {{ "checked" if options.isChecked else "" }}/>
+                        <span>{{ name }}</span>
+                    </label>
+                </p>
+            {% endfor %}
+
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="modal-close waves-effect waves-green btn-flat" onclick='handleFilterChange()'>Save</a>
+    </div>
+</div>

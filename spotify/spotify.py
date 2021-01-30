@@ -1,11 +1,11 @@
 from utils.utils import getTokenInfo, stripChars, mergeDicts, chunks
 from utils.constants import LIKED_SONGS_ID, FILTERABLE
 from flask import current_app
+from app import cache
 import spotipy
 import json
 
 config = current_app.config
-from app import cache
 
 
 def getTracks(session, data):

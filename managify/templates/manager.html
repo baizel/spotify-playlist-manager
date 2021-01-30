@@ -1,5 +1,4 @@
 <!doctype html>
-<title>Pls work</title>
 <head>
     {% block styles %}
         <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
@@ -17,43 +16,29 @@
 
         <script type="text/javascript" charset="utf8"
                 src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
+        <script type="text/javascript" charset="utf8"
+                src="https://cdn.datatables.net/buttons/1.6.5/js/dataTables.buttons.min.js"></script>
+        <title>Playlist manger</title>
 
     {% endblock %}
 </head>
 <main>
     {% include 'components/sidenav.html' %}
     {% include 'components/nav.html' %}
-    <p> click a play list </p>
     <div class="container">
-        <div id="filterPanel">
-            <a class="waves-effect waves-light modal-trigger" href="#modal1"> <i class="small material-icons">add_circle_outline</i></a>
-        </div>
         <div id="tableContainer">
             <table id="songTable" class="highlight">
             </table>
         </div>
     </div>
 
-    <!-- Modal Structure -->
-    <div id="modal1" class="modal">
-        <div class="modal-content">
-            <h4>Audio feature columns</h4>
-            <form action="#">
-                {% for name,apiName in filter.items() %}
-                    <p>
-                        <label>
-                            <input name="filterCheckbox" value="{{ name }}" id="{{ apiName }}" type="checkbox"/>
-                            <span>{{ name }}</span>
-                        </label>
-                    </p>
-                {% endfor %}
-
-            </form>
-        </div>
-        <div class="modal-footer">
-            <a href="#!" class="modal-close waves-effect waves-green btn-flat" onclick='handleFilterChange()'>Save</a>
+    <div class="valign-wrapper nodata">
+        <div class="content">
+            <h3 class="center-align">Click on a playlist to get started</h3>
         </div>
     </div>
+
+    {% include 'components/modal.html' %}
 
 </main>
 

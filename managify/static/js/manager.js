@@ -39,8 +39,7 @@ async function toggleAndUpdateTable(id, name) {
 }
 
 async function updateTable() {
-    const data = await getPlaylistTracks(chosenPlaylists);
-    storedData = data;
+    storedData = await getPlaylistTracks(chosenPlaylists);
     const options = {
         "dom": 'Blfrtir',
         "ordering": true,
@@ -65,8 +64,7 @@ async function updateTable() {
                 text: "Column Filter",
                 className: 'btn modal-trigger pink waves-effect waves-light',
                 attr: {
-                    title: 'Copy',
-                    id: 'copyButton',
+                    title: 'filterbtn',
                     "data-target": "modal1"
                 }
             }
@@ -76,7 +74,12 @@ async function updateTable() {
     const optionWithData = Object.assign(options, storedData)
     optionWithData.columns.push(...filterOptions)
     deleteTableFromDOM()
-    $(prefixHash(SONG_TABLE_ID)).DataTable(optionWithData);
+    const table = $(prefixHash(SONG_TABLE_ID)).DataTable(optionWithData);
+    $(`${prefixHash(SONG_TABLE_ID)} tbody`).on('click', 'tr', function (element) {
+        if (!($(element.target).is("input") || $(element.target).hasClass("playlistCheckBox"))) {
+            onClickRow(this, table);
+        }
+    });
 
 }
 
@@ -86,11 +89,11 @@ function deleteTableFromDOM() {
         const dtApi = $(prefixHash(SONG_TABLE_ID)).DataTable();
         dtApi.destroy();
         document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML = initTableHTML;
-        console.log("called")
     }
 }
 
 function formatSongColumn(row, columnIndex, imageUrl, songName) {
+    //TODO: make this hoverable
     const imgHTML = `<div class="valign-wrapper">
                         <img src="${imageUrl}" alt="album art" class="circle" height="32">
                         <span class="song-name">${songName}</span>
@@ -103,7 +106,7 @@ function formatCheckboxColumns(row, columnIndex, payload, isChecked) {
     const pld = JSON.stringify(payload);
     const checkbox = `<label>
                         <input type="checkbox" ${isCheckedAttr} onclick='handleCheckbox(this, ${pld})'>
-                        <span></span>
+                        <span class="playlistCheckBox"></span>
                   </label>`
     $(`td:eq(${columnIndex})`, row).html(checkbox);
 }
@@ -145,4 +148,24 @@ function toggleNoDataContent() {
 
 function prefixHash(val) {
     return '#' + val;
+}
+
+function onClickRow(context, table) {
+    const song = table.row(context).data()
+    console.log(song.Song)
+    table.rows().every(function () {
+        this.nodes().to$().removeClass('red lighten-5')
+    })
+
+    const $row = table.row(context).nodes().to$();
+    const hasClass = $row.hasClass('red lighten-5');
+    if (hasClass) {
+        $row.removeClass('red lighten-5')
+    } else {
+        $row.addClass('red lighten-5')
+    }
+}
+
+function appliedData() {
+    //table.rows( { order: 'applied' } ).data()
 }

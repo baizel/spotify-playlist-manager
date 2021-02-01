@@ -1,12 +1,31 @@
 <div id="slide-out" class="sidenav sidenav-fixed collection">
-        <h5 class="center">Playlist Manager</h5>
-        <ul>
-            <li><a class="subheader center">Your playlists</a></li>
-            {% for playlist in data %}
-                <li class="collection-item avatar" id="{{ playlist.id }}" onclick="toggleAndUpdateTable('{{ playlist.id }}','{{ playlist.name }}')">
-                    <img src="{{ playlist.image.url }}" alt="" class="circle">
-                    <p>{{ playlist.name }}</p>
+    <h5 class="center">Playlist Manager</h5>
+    <ul>
+        <li><a class="subheader center">Manage Playlists</a></li>
+        <li>
+            <ul class="collapsible">
+                <li>
+                    <div class="collapsible-header"><i class="material-icons">add</i>Other Playlists</div>
+                    <div class="collapsible-body">
+                        <span class="center-align">Add playlist by Id coming soon</span>
+
+                    </div>
                 </li>
-            {% endfor %}
-        </ul>
-    </div>
+                <li class="active">
+                    <div class="collapsible-header"><i class="material-icons">library_music</i>Your Playlists</div>
+                    <div class="collapsible-body">
+                        <ul>
+                            {% for playlist in data %}
+                                <li class="collection-item avatar" id="{{ playlist.id }}"
+                                    onclick="toggleAndUpdateTable('{{ playlist.id }}','{{ playlist.name }}')">
+                                    <img src="{{ playlist.image.url }}" alt="" class="circle">
+                                    <p>{{ playlist.name }}</p>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</div>

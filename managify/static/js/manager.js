@@ -1,6 +1,8 @@
 const SONG_TABLE_ID = "songTable"
 const SONG_TABLE_CONTAINER_ID = "tableContainer"
 const SKIPPED_COLUMNS = 2;
+let numberOfRequests = 0;
+let resolvedRequests = 0;
 let initTableHTML = undefined
 let chosenPlaylists = [];
 let storedData = {}
@@ -23,7 +25,9 @@ function updateFilterOptions() {
 }
 
 async function handleFilterChange() {
+    // showLoader();
     updateFilterOptions();
+    // drawTable(() => hideLoader());
     await updateTable();
 }
 
@@ -31,7 +35,7 @@ async function toggleAndUpdateTable(id, name) {
     toggleToList({id, name});
     toggleNoDataContent()
     await updateTable().then(() => {
-        if (!Boolean(storedData.data.length)) {
+        if (!(Boolean(storedData.data) && Boolean(storedData.data.length))) {
             deleteTableFromDOM();
         }
     });
@@ -40,6 +44,10 @@ async function toggleAndUpdateTable(id, name) {
 
 async function updateTable() {
     storedData = await getPlaylistTracks(chosenPlaylists);
+    drawTable();
+}
+
+function drawTable(onDraw) {
     const options = {
         "dom": 'Blfrtir',
         "ordering": true,
@@ -68,9 +76,19 @@ async function updateTable() {
                     "data-target": "modal1"
                 }
             }
-        ]
+        ],
+        // scrollY: (getPageHeight() - 350) + "px",
+        // scrollX: true,
+        // scrollCollapse: true,
+        // fixedColumns: true
     }
 
+    // deleteTableFromDOM();
+    // const existingColumns = new Set(JSON.parse(JSON.stringify(storedData.columns)));
+    // new Set(JSON.parse(JSON.stringify(filterOptions))).forEach((item) => existingColumns.add(item));
+    // storedData.columns = JSON.parse(JSON.stringify([...existingColumns]));
+    // const optionWithData = Object.assign(options, storedData);
+    // const table = $(prefixHash(SONG_TABLE_ID)).DataTable(optionWithData);
     const optionWithData = Object.assign(options, storedData)
     optionWithData.columns.push(...filterOptions)
     deleteTableFromDOM()
@@ -80,7 +98,6 @@ async function updateTable() {
             onClickRow(this, table);
         }
     });
-
 }
 
 function deleteTableFromDOM() {
@@ -118,10 +135,15 @@ function handleCheckbox(target, payload) {
 }
 
 async function getPlaylistTracks(playlists) {
-    return fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists)})
+    numberOfRequests++;
+    handleSpinnerState();
+    return fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists), cache: "reload"})
         .then((response) => {
             return response.json()
-        });
+        }).finally((() => {
+            resolvedRequests++
+            handleSpinnerState();
+        }));
 
 }
 
@@ -166,6 +188,28 @@ function onClickRow(context, table) {
     }
 }
 
+function handleSpinnerState() {
+    showLoader();
+    if (resolvedRequests === numberOfRequests) {
+        hideLoader();
+    }
+}
+
 function appliedData() {
     //table.rows( { order: 'applied' } ).data()
+}
+
+function getPageHeight() {
+    const body = document.body, html = document.documentElement;
+    return Math.max(body.scrollHeight, body.offsetHeight,
+        html.clientHeight, html.scrollHeight, html.offsetHeight);
+}
+
+function showLoader() {
+    document.getElementById("data-loader").style.visibility = "visible";
+}
+
+function hideLoader() {
+    document.getElementById("data-loader").style.visibility = "hidden";
+
 }

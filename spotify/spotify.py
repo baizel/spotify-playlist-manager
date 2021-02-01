@@ -26,6 +26,7 @@ def getTracks(session, data):
                 build[track['id']] = {**{"playlists": [playlist['name']]}, **track}
             else:
                 build[track['id']]['playlists'].append(playlist['name'])
+
     for songId in build.keys():
         ret = {"Song": build[songId].pop('name'), "Artist": build[songId].pop('artist'), **build[songId]}
         for playlist in duplicateRemoved:
@@ -36,17 +37,13 @@ def getTracks(session, data):
     return result
 
 
-@cache.memoize(timeout=60 * 5)
+@cache.memoize(timeout=60 * 60)
 def getAllPlaylists(accessToken):
     res = [{"name": "Liked Songs", "id": LIKED_SONGS_ID, "image": {"url": "/static/image.jpg"}}]
     sp = spotipy.Spotify(auth=accessToken)
     playlists = sp.current_user_playlists()
     while playlists:
-        for i, playlist in enumerate(playlists['items']):
-            # print(playlist)
-            if len(playlist['images']) > 0:
-                res.append(
-                    {"name": stripChars(playlist['name']), "id": playlist['id'], "image": playlist['images'][0]})
+        res = res + [x for x in map(buildTrackFromPlaylist, playlists['items']) if x is not None]
         if playlists['next']:
             playlists = sp.next(playlists)
         else:
@@ -54,7 +51,7 @@ def getAllPlaylists(accessToken):
     return res
 
 
-@cache.memoize(timeout=60 * 5)
+@cache.memoize(timeout=60 * 60)
 def getPlayListTracks(playlistId, accessToken):
     sp = spotipy.Spotify(auth=accessToken)
     if playlistId == LIKED_SONGS_ID:
@@ -80,9 +77,15 @@ def getPlayListTracks(playlistId, accessToken):
 
 def getTrackFeatures(tracks, accessToken):
     sp = spotipy.Spotify(auth=accessToken)
-    trackChunks = chunks(tracks, 100)
+    trackChunks = chunks(tracks, 100)  # 100 max allowed oer call
     allFeatures = []
     for chunk in trackChunks:
         trackIds = [track['id'] for track in chunk]
         allFeatures = allFeatures + sp.audio_features(trackIds)
     return mergeDicts(tracks, allFeatures)
+
+
+def buildTrackFromPlaylist(playlist):
+    if len(playlist['images']) > 0:
+        return {"name": stripChars(playlist['name']), "id": playlist['id'], "image": playlist['images'][0]}
+    return None

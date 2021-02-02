@@ -6,6 +6,7 @@
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
         <link href="{{ url_for('managify.static', filename='manager.css') }}" rel="stylesheet">
+        <link href="{{ url_for('managify.static', filename='css/datatable.css') }}" rel="stylesheet">
     {% endblock %}
     {% block scritps %}
         <script src="{{ url_for('managify.static', filename='js/init.js') }}"></script>
@@ -20,6 +21,8 @@
                 src="https://cdn.datatables.net/buttons/1.6.5/js/dataTables.buttons.min.js"></script>
         <script type="text/javascript" charset="utf8"
                 src="https://cdn.datatables.net/fixedcolumns/3.3.2/js/dataTables.fixedColumns.min.js"></script>
+        <script src="{{ url_for('managify.static', filename='js/dtmt.js') }}"></script>
+
         <title>Playlist manger</title>
 
     {% endblock %}
@@ -48,11 +51,27 @@
         </div>
     </div>
 
-    <div class="container">
-        <div id="tableContainer">
-            <table id="songTable" class="highlight">
-            </table>
+    <div id="tableContainer">
+        <div class="row">
+            <div id="man" class="col s12">
+                <div class="card material-table">
+                    <div class="table-header">
+                        <span class="table-title">Song Library</span>
+                        <div class="actions">
+                            <a href="#filterModal" class="modal-trigger waves-effect btn-flat nopadding"><i
+                                    class="material-icons">filter_list</i></a>
+                            <a href="#" class="search-toggle waves-effect btn-flat nopadding"><i class="material-icons">search</i></a>
+                        </div>
+                    </div>
+                    <table id="songTable" class="highlight">
+                    </table>
+                </div>
+            </div>
         </div>
+        {#        <div id="tableContainer">#}
+        {#            <table id="songTable" class="highlight">#}
+        {#            </table>#}
+        {#        </div>#}
     </div>
 
     <div class="valign-wrapper nodata">

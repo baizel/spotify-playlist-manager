@@ -45,3 +45,7 @@ header, main, footer {
     visibility: hidden;
     opacity: 0.75;
 }
+
+#tableContainer {
+    display: none;
+}

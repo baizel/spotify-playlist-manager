@@ -14,6 +14,7 @@ window.onload = function () {
     const modalElem = document.querySelectorAll('.modal');
     const modalInstance = M.Modal.init(modalElem, {onCloseEnd: handleFilterChange});
     updateFilterOptions();
+
 }
 
 function updateFilterOptions() {
@@ -48,8 +49,14 @@ async function updateTable() {
 }
 
 function drawTable(onDraw) {
+    function draw(setting) {
+        initSearchBar();
+        const func = onDraw || $.noop;
+        func(setting);
+    }
+
     const options = {
-        "dom": 'Blfrtir',
+        // "dom": 'Blfrtir',
         "ordering": true,
         "order": [],
         "paging": false,
@@ -67,16 +74,10 @@ function drawTable(onDraw) {
         },
         "rowCallback": function (row, data, displayNum, displayIndex, dataIndex) {
         },
-        buttons: [
-            {
-                text: "Column Filter",
-                className: 'btn modal-trigger pink waves-effect waves-light',
-                attr: {
-                    title: 'filterbtn',
-                    "data-target": "modal1"
-                }
-            }
-        ],
+        "drawCallback": draw,
+        language: {
+            searchPlaceholder: "Search Songs"
+        }
         // scrollY: (getPageHeight() - 350) + "px",
         // scrollX: true,
         // scrollCollapse: true,
@@ -163,8 +164,10 @@ function toggleToList(playlist) {
 function toggleNoDataContent() {
     if (chosenPlaylists.length > 0) {
         document.getElementsByClassName("nodata")[0].style.display = 'none';
+        document.getElementById('tableContainer').style.display = 'block';
     } else {
         document.getElementsByClassName("nodata")[0].style.display = 'block';
+        document.getElementById('tableContainer').style.display = 'none';
     }
 }
 
@@ -211,5 +214,13 @@ function showLoader() {
 
 function hideLoader() {
     document.getElementById("data-loader").style.visibility = "hidden";
+}
 
+function initSearchBar() {
+    $('.search-toggle').click(function () {
+        if ($('.hiddensearch').css('display') == 'none')
+            $('.hiddensearch').slideDown();
+        else
+            $('.hiddensearch').slideUp();
+    });
 }

@@ -32,8 +32,8 @@ async function handleFilterChange() {
     await updateTable();
 }
 
-async function toggleAndUpdateTable(id, name) {
-    toggleToList({id, name});
+async function toggleAndUpdateTable(id, name, isReadOnly) {
+    toggleToList({id, name, isReadOnly});
     toggleNoDataContent()
     await updateTable().then(() => {
         if (!(Boolean(storedData.data) && Boolean(storedData.data.length))) {
@@ -51,6 +51,7 @@ async function updateTable() {
 function drawTable(onDraw) {
     function draw(setting) {
         initSearchBar();
+        setReadOnlyCheckBoxes();
         const func = onDraw || $.noop;
         func(setting);
     }
@@ -123,7 +124,7 @@ function formatCheckboxColumns(row, columnIndex, payload, isChecked) {
     const isCheckedAttr = isChecked ? "checked" : "";
     const pld = JSON.stringify(payload);
     const checkbox = `<label>
-                        <input type="checkbox" ${isCheckedAttr} onclick='handleCheckbox(this, ${pld})'>
+                        <input class="${payload.playlistId}" type="checkbox" ${isCheckedAttr} onclick='handleCheckbox(this, ${pld})'>
                         <span class="playlistCheckBox"></span>
                   </label>`
     $(`td:eq(${columnIndex})`, row).html(checkbox);
@@ -223,4 +224,16 @@ function initSearchBar() {
         else
             $('.hiddensearch').slideUp();
     });
+}
+
+function setReadOnlyCheckBoxes() {
+    chosenPlaylists.filter(playlist => JSON.parse(playlist.isReadOnly.toLocaleLowerCase())).forEach((playlist) => {
+        let checkboxes = document.getElementsByClassName(playlist.id)
+        Array.from(checkboxes).forEach((item) => {
+            item.disabled = true;
+            if(!item.checked){
+                item.indeterminate = true
+            }
+        });
+    })
 }

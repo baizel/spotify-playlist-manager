@@ -36,14 +36,16 @@ def getTracks(session, data):
     result['data'] = getTrackFeatures(result['data'], accessToken)
     return result
 
-
 @cache.memoize(timeout=60 * 60)
-def getAllPlaylists(accessToken):
-    res = [{"name": "Liked Songs", "id": LIKED_SONGS_ID, "image": {"url": "/static/image.jpg"}}]
+def getAllPlaylistInfos(accessToken):
+    res = [{"name": "Liked Songs", "id": LIKED_SONGS_ID, "image": {"url": "/static/image.jpg"}, "isReadOnly":False}]
     sp = spotipy.Spotify(auth=accessToken)
+    owner = sp.me()
     playlists = sp.current_user_playlists()
     while playlists:
-        res = res + [x for x in map(buildTrackFromPlaylist, playlists['items']) if x is not None]
+        # res = res + [buildTrackFromPlaylist(plylist, sp.me()) for plylist in playlists['items'] ]
+        res = res + [result for eachPlaylist in playlists['items'] if
+                     (result := buildTrackFromPlaylist(eachPlaylist, owner)) is not None]
         if playlists['next']:
             playlists = sp.next(playlists)
         else:
@@ -53,16 +55,18 @@ def getAllPlaylists(accessToken):
 
 @cache.memoize(timeout=60 * 60)
 def getPlayListTracks(playlistId, accessToken):
+    # fields = "items(added_by(id,uri,type), track(id,type,name,popularity,artists(id,name,uri),album(images,album_type,artists(id,name,uri))))"
     sp = spotipy.Spotify(auth=accessToken)
     if playlistId == LIKED_SONGS_ID:
         tracks = sp.current_user_saved_tracks()
     else:
-        tracks = sp.playlist_items(playlistId)
+        tracks = sp.playlist_items(playlistId, additional_types=('track',))
     res = []
     while tracks:
         for i, track in enumerate(tracks['items']):
             if track.get('track') is not None and track['track']['type'] == 'track' and track['track']['album'][
                 "album_type"] is not None:
+                # Add popularity and preview url here
                 data = {"id": track['track']['id'], "name": track['track']['name'],
                         "artist": track['track']['artists'][0]['name']}
                 if track['track'].get('album') is not None:
@@ -85,7 +89,9 @@ def getTrackFeatures(tracks, accessToken):
     return mergeDicts(tracks, allFeatures)
 
 
-def buildTrackFromPlaylist(playlist):
+def buildTrackFromPlaylist(playlist, owner):
     if len(playlist['images']) > 0:
-        return {"name": stripChars(playlist['name']), "id": playlist['id'], "image": playlist['images'][0]}
+        isReadOnly = False if playlist['owner']['id'] == owner['id'] else True
+        return {"name": stripChars(playlist['name']), "id": playlist['id'], "image": playlist['images'][0],
+                "isReadOnly": isReadOnly}
     return None

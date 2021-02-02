@@ -17,7 +17,7 @@
                         <ul>
                             {% for playlist in data %}
                                 <li class="collection-item avatar" id="{{ playlist.id }}"
-                                    onclick="toggleAndUpdateTable('{{ playlist.id }}','{{ playlist.name }}')">
+                                    onclick="toggleAndUpdateTable('{{ playlist.id }}','{{ playlist.name }}', '{{ playlist.isReadOnly }}')">
                                     <img src="{{ playlist.image.url }}" alt="" class="circle">
                                     <p>{{ playlist.name }}</p>
                                 </li>

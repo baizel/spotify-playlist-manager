@@ -28,7 +28,9 @@ def getTracks(session, data):
                 build[track['id']]['playlists'].append(playlist['name'])
 
     for songId in build.keys():
-        ret = {"Song": build[songId].pop('name'), "Artist": build[songId].pop('artist'), **build[songId]}
+        artist = ', '.join([artist['name'] for artist in build[songId].pop('artists')])
+        print(artist)
+        ret = {"Song": build[songId].pop('name'), "Artist": artist, **build[songId]}
         for playlist in duplicateRemoved:
             ret[playlist['name']] = True if playlist['name'] in build[songId]['playlists'] else False
         result['data'].append(ret)
@@ -36,9 +38,10 @@ def getTracks(session, data):
     result['data'] = getTrackFeatures(result['data'], accessToken)
     return result
 
+
 @cache.memoize(timeout=60 * 60)
 def getAllPlaylistInfos(accessToken):
-    res = [{"name": "Liked Songs", "id": LIKED_SONGS_ID, "image": {"url": "/static/image.jpg"}, "isReadOnly":False}]
+    res = [{"name": "Liked Songs", "id": LIKED_SONGS_ID, "image": {"url": "/static/image.jpg"}, "isReadOnly": False}]
     sp = spotipy.Spotify(auth=accessToken)
     owner = sp.me()
     playlists = sp.current_user_playlists()
@@ -55,7 +58,8 @@ def getAllPlaylistInfos(accessToken):
 
 @cache.memoize(timeout=60 * 60)
 def getPlayListTracks(playlistId, accessToken):
-    # fields = "items(added_by(id,uri,type), track(id,type,name,popularity,artists(id,name,uri),album(images,album_type,artists(id,name,uri))))"
+    # fields = "items(added_by(id,uri,type), track(id,type,name,popularity,artists(id,name,uri),album(images,
+    # album_type,artists(id,name,uri))))"
     sp = spotipy.Spotify(auth=accessToken)
     if playlistId == LIKED_SONGS_ID:
         tracks = sp.current_user_saved_tracks()
@@ -67,8 +71,9 @@ def getPlayListTracks(playlistId, accessToken):
             if track.get('track') is not None and track['track']['type'] == 'track' and track['track']['album'][
                 "album_type"] is not None:
                 # Add popularity and preview url here
-                data = {"id": track['track']['id'], "name": track['track']['name'],
-                        "artist": track['track']['artists'][0]['name']}
+                # data = {"id": track['track']['id'], "name": track['track']['name'],
+                #         "artist": track['track']['artists'][0]['name']}
+                data = {**track['track']}
                 if track['track'].get('album') is not None:
                     data["images"] = track['track']['album']['images']
                 res.append(data)

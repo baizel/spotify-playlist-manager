@@ -7,7 +7,7 @@ let initTableHTML = undefined
 let chosenPlaylists = [];
 let storedData = {}
 let filterOptions = [];
-
+let currentAudio = null;
 
 window.onload = function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
@@ -62,9 +62,11 @@ function drawTable(onDraw) {
         "order": [],
         "paging": false,
         "createdRow": function (row, data, index) {
+            const id = data.id;
             const imageUrl = data.images[2] ? data.images[2].url : "";
             const songName = data.Song;
-            formatSongColumn(row, 0, imageUrl, songName);
+            const previewUrl = data.preview_url;
+            formatSongColumn(row, 0, {imageUrl, songName});
             for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - filterOptions.length; i++) {
                 let payload = {
                     songId: data.id,
@@ -111,8 +113,7 @@ function deleteTableFromDOM() {
     }
 }
 
-function formatSongColumn(row, columnIndex, imageUrl, songName) {
-    //TODO: make this hoverable
+function formatSongColumn(row, columnIndex, {imageUrl, songName}) {
     const imgHTML = `<div class="valign-wrapper">
                         <img src="${imageUrl}" alt="album art" class="circle" height="32">
                         <span class="song-name">${songName}</span>
@@ -178,18 +179,67 @@ function prefixHash(val) {
 
 function onClickRow(context, table) {
     const song = table.row(context).data()
-    console.log(song.Song)
+    playSampleSong(song)
     table.rows().every(function () {
-        this.nodes().to$().removeClass('red lighten-5')
+        this.nodes().to$().removeClass('rowClick')
     })
 
     const $row = table.row(context).nodes().to$();
-    const hasClass = $row.hasClass('red lighten-5');
+    const hasClass = $row.hasClass('rowClick');
     if (hasClass) {
-        $row.removeClass('red lighten-5')
+        $row.removeClass('rowClick')
     } else {
-        $row.addClass('red lighten-5')
+        $row.addClass('rowClick')
     }
+}
+
+function playSampleSong(song) {
+    loadMusic(song.preview_url);
+    let img = document.getElementById('playerImage');
+    let title = document.getElementById('playerSongTitle');
+    title.innerText = song.Song;
+    img.src = song.images[0].url;
+    onPlayerPlay();
+}
+
+function showPlayState() {
+    let playButton = document.getElementById('playButton');
+    let pauseButton = document.getElementById('pauseButton');
+    playButton.classList.remove('hide');
+    pauseButton.classList.add('hide');
+}
+
+function showPauseState() {
+    let playButton = document.getElementById('playButton');
+    let pauseButton = document.getElementById('pauseButton');
+    playButton.classList.add('hide');
+    pauseButton.classList.remove('hide');
+}
+
+function onPlayerPause() {
+    if (currentAudio) {
+        currentAudio.pause()
+        showPlayState();
+    }
+}
+
+function onPlayerPlay() {
+    if (currentAudio) {
+        currentAudio.play()
+        showPauseState();
+    }
+}
+
+function loadMusic(url) {
+    if (!currentAudio) {
+        currentAudio = new Audio();
+    }
+    currentAudio.onended = function () {
+        showPlayState();
+    };
+
+    currentAudio.setAttribute('src', url);
+    currentAudio.load();
 }
 
 function handleSpinnerState() {
@@ -219,7 +269,7 @@ function hideLoader() {
 
 function initSearchBar() {
     $('.search-toggle').click(function () {
-        if ($('.hiddensearch').css('display') == 'none')
+        if ($('.hiddensearch').css('display') === 'none')
             $('.hiddensearch').slideDown();
         else
             $('.hiddensearch').slideUp();
@@ -231,7 +281,7 @@ function setReadOnlyCheckBoxes() {
         let checkboxes = document.getElementsByClassName(playlist.id)
         Array.from(checkboxes).forEach((item) => {
             item.disabled = true;
-            if(!item.checked){
+            if (!item.checked) {
                 item.indeterminate = true
             }
         });

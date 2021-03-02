@@ -1,7 +1,7 @@
 import time
 from collections import defaultdict
 from typing import Tuple
-from spotipy import SpotifyOAuth
+import spotipy
 
 
 def mergeDicts(d1, d2):
@@ -49,10 +49,8 @@ def getTokenInfo(sess, spConfig) -> Tuple[any, bool]:
     return tokenInfo, isTokenValid
 
 
-def getNewAuthManager(config) -> SpotifyOAuth:
-    return SpotifyOAuth(client_id=config["SP_CLIENT_ID"],
-                        client_secret=config["SP_CLIENT_SECRET"],
-                        redirect_uri=config["SP_REDIRECT_URI"],
-                        scope=config['SP_SCOPE'])
-
-
+def getNewAuthManager(config) -> spotipy.oauth2.SpotifyOAuth:
+    return spotipy.oauth2.SpotifyOAuth(client_id=config["SP_CLIENT_ID"],
+                                       client_secret=config["SP_CLIENT_SECRET"],
+                                       redirect_uri=config["SP_REDIRECT_URI"],
+                                       scope=config['SP_SCOPE'])

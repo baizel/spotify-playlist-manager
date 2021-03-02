@@ -18,10 +18,10 @@ def logout():
 @bp.route('/callback')
 def callback():
     spOauth = getNewAuthManager(current_app.config)
-    session.clear()
     code = request.args.get('code')
-    tokenInfo = spOauth.get_access_token(code)
+    tokenInfo = spOauth.get_access_token(code, check_cache=False)
 
     # Saving the access token along with all other token related info
     session["token_info"] = tokenInfo
+    session.modified = True
     return redirect('/')

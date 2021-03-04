@@ -4,4 +4,5 @@ document.addEventListener('DOMContentLoaded', function () {
     let sideNavInstance = M.Sidenav.init(elems, {});
     let collapInstance = M.Collapsible.init(collapsible, {});
     sideNavInstance.isFixed = true;
+     console.log('init');
 });

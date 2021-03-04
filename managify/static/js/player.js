@@ -14,14 +14,16 @@ let seekBarInterval;
 let isPaused = true;
 
 
-window.onload = function () {
+document.addEventListener('DOMContentLoaded', function () {
     seekBarInterval = setInterval(() => {
         if (!isPaused) {
             const seekbar = document.getElementById('sp_seekbar');
             seekbar.value = parseInt(seekbar.value) + 10;
         }
     }, 10)
-}
+    console.log('init player');
+});
+
 window.onSpotifyWebPlaybackSDKReady = listener => {
     fetch(`api/sp/accessToken`, {method: 'GET'})
         .then((response) => {
@@ -116,12 +118,11 @@ function playSong(song, tableData) {
     }
 
 }
-//
+
 function updatePlayerTitle(name) {
     Array.from(document.getElementsByClassName('playerSongTitle')).forEach(ele => ele.innerText = name);
-
 }
-//
+
 function showPlayState() {
     if (!isSpotifyPlayer) {
         let playButton = document.getElementById('playButton');
@@ -161,7 +162,6 @@ function onPlayerPause() {
             console.log('Paused!');
         });
     }
-
 }
 
 function onPlayerPlay() {
@@ -173,14 +173,12 @@ function onPlayerPlay() {
             console.log('Resumed!');
         });
     }
-
 }
 
 function onNext() {
     player.nextTrack().then(() => {
         console.log('Skipped to next track!');
     });
-
 }
 
 function onSeek(state) {
@@ -188,14 +186,12 @@ function onSeek(state) {
     player.seek(pos).then(() => {
         console.log('Changed position!');
     });
-
 }
 
 function onPrevious() {
     player.previousTrack().then(() => {
         console.log('Set to previous track!');
     });
-
 }
 
 function stopMusIfPlaying() {
@@ -203,7 +199,6 @@ function stopMusIfPlaying() {
         currentAudio.pause();
         currentAudio = null
     }
-
 }
 
 function loadMusic(url) {
@@ -215,7 +210,6 @@ function loadMusic(url) {
     };
     currentAudio.setAttribute('src', url);
     currentAudio.load();
-
 }
 
 function onPLayerFunctionChange(state) {

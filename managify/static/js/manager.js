@@ -8,13 +8,13 @@ let chosenPlaylists = [];
 let storedData = {}
 let filterOptions = [];
 
-window.onload = function () {
+document.addEventListener('DOMContentLoaded', function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
     const modalElem = document.querySelectorAll('.modal');
     const modalInstance = M.Modal.init(modalElem, {onCloseEnd: handleFilterChange});
     updateFilterOptions();
-
-}
+ console.log('init manager');
+});
 
 function updateFilterOptions() {
     const checkboxes = document.querySelectorAll('input[name="filterCheckbox"]:checked');
@@ -137,11 +137,11 @@ function handleCheckbox(target, payload) {
 }
 
 async function getPlaylistTracks(playlists) {
+    console.log(playlists)
     numberOfRequests++;
     handleSpinnerState();
     return fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists), cache: "reload"})
         .then((response) => {
-            console.log(response)
             return response.json()
         }).finally((() => {
             resolvedRequests++
@@ -178,9 +178,9 @@ function prefixHash(val) {
 }
 
 function removeClickClass(table) {
-    // table.rows().every(function () {
-    //     this.nodes().to$().removeClass('rowClick')
-    // })
+    table.rows().every(function () {
+        this.nodes().to$().removeClass('rowClick')
+    })
 }
 
 function onClickRow(context, table) {
@@ -188,14 +188,7 @@ function onClickRow(context, table) {
     const tableData = getAppliedData(table);
     playSong(song, tableData)
     removeClickClass(table);
-    // applyRowClick(table.row(context).nodes().to$());
-    // const $clickedRow = table.row(context).nodes().to$();
-    // const hasClass = $clickedRow.hasClass('rowClick');
-    // if (hasClass) {
-    //     $clickedRow.removeClass('rowClick')
-    // } else {
-    //     $clickedRow.addClass('rowClick')
-    // }
+    applyRowClick(table.row(context).nodes().to$());
 }
 
 function handleSpinnerState() {
@@ -247,8 +240,8 @@ function setReadOnlyCheckBoxes() {
 function updateTableSelection(uri) {
     const table = $(prefixHash(SONG_TABLE_ID)).DataTable();
     const indexOfRow = table.rows().data().toArray().findIndex(x => x.uri === uri);
-    // removeClickClass(table);
-    // applyRowClick(table.rows(indexOfRow).nodes().to$());
+    removeClickClass(table);
+    applyRowClick(table.rows(indexOfRow).nodes().to$());
 }
 
 function applyRowClick($clickedRow) {

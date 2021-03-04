@@ -110,7 +110,7 @@ function playSong(song, tableData) {
         document.getElementById('playerImage').src = song.images[0].url;
         onPlayerPlay();
     } else {
-        stopMusIfPlaying();
+        stopAudioIfPlaying();
         const uris = tableData.map(a => a.uri);
         const offset = {position: tableData.findIndex(x => x.uri === song.uri)}
         const data = {deviceId, uris, offset};
@@ -194,7 +194,7 @@ function onPrevious() {
     });
 }
 
-function stopMusIfPlaying() {
+function stopAudioIfPlaying() {
     if (currentAudio) {
         currentAudio.pause();
         currentAudio = null
@@ -212,7 +212,7 @@ function loadMusic(url) {
     currentAudio.load();
 }
 
-function onPLayerFunctionChange(state) {
+function onSpotifyConnectionToggle(state) {
     isSpotifyPlayer = state.checked;
     const previewPlayer = document.getElementById('preview-player').classList;
     const spotifyPlayer = document.getElementById('spotifyPlayer').classList;
@@ -223,6 +223,6 @@ function onPLayerFunctionChange(state) {
         previewPlayer.remove('hide');
         spotifyPlayer.add('hide');
     }
-
-    stopMusIfPlaying();
+    stopAudioIfPlaying();
+    pla
 }

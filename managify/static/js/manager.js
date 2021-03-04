@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalElem = document.querySelectorAll('.modal');
     const modalInstance = M.Modal.init(modalElem, {onCloseEnd: handleFilterChange});
     updateFilterOptions();
- console.log('init manager');
 });
 
 function updateFilterOptions() {
@@ -64,7 +63,6 @@ function drawTable(onDraw) {
             const id = data.id;
             const imageUrl = data.images[2] ? data.images[2].url : "";
             const songName = data.Song;
-            const previewUrl = data.preview_url;
             formatSongColumn(row, 0, {imageUrl, songName});
             for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - filterOptions.length; i++) {
                 let payload = {
@@ -186,7 +184,7 @@ function removeClickClass(table) {
 function onClickRow(context, table) {
     const song = table.row(context).data()
     const tableData = getAppliedData(table);
-    playSong(song, tableData)
+    playSong(song, tableData) //Should be imported from the other file
     removeClickClass(table);
     applyRowClick(table.row(context).nodes().to$());
 }

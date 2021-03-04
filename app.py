@@ -13,8 +13,8 @@ app.config.from_json('config.json', silent=False)
 
 cache = Cache(app)
 with app.app_context():
-    from api import auth, sp
     from managify import managify
+    from api import auth, sp
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(sp.bp)

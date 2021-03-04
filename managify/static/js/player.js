@@ -135,7 +135,6 @@ function showPlayState() {
         spPlayButton.classList.remove('hide');
         spPauseButton.classList.add('hide');
     }
-
 }
 
 function showPauseState() {
@@ -224,5 +223,4 @@ function onSpotifyConnectionToggle(state) {
         spotifyPlayer.add('hide');
     }
     stopAudioIfPlaying();
-    pla
 }

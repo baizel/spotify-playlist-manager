@@ -200,6 +200,10 @@ function getAppliedData(table) {
     return table.rows({order: 'applied'}).data().toArray();
 }
 
+function getIndexedData(table) {
+    return table.rows({order: 'index'}).data().toArray();
+}
+
 function getPageHeight() {
     const body = document.body, html = document.documentElement;
     return Math.max(body.scrollHeight, body.offsetHeight,
@@ -237,9 +241,12 @@ function setReadOnlyCheckBoxes() {
 
 function updateTableSelection(uri) {
     const table = $(prefixHash(SONG_TABLE_ID)).DataTable();
-    const indexOfRow = table.rows().data().toArray().findIndex(x => x.uri === uri);
-    removeClickClass(table);
-    applyRowClick(table.rows(indexOfRow).nodes().to$());
+    const tableData = getIndexedData(table);
+    const indexOfRow = tableData.findIndex(x => x.uri === uri);
+    if (indexOfRow >= 0) {
+        removeClickClass(table);
+        applyRowClick(table.rows(indexOfRow).nodes().to$());
+    }
 }
 
 function applyRowClick($clickedRow) {

@@ -63,13 +63,28 @@ header, main, footer {
     bottom: 0;
     z-index: 1000;
 }
+
 .player img {
     max-width: 100%;
     max-height: 100%;
 }
+
 .player .row {
     margin-bottom: 0 !important;
 }
+
+input[type=range]::-webkit-slider-thumb {
+    background-color: #1DB954;
+}
+
+input[type=range]::-moz-range-thumb {
+    background-color: #1DB954;
+}
+
+input[type=range]::-ms-thumb {
+    background-color: #1DB954;
+}
+
 /*.rowClick td {*/
 /*    border-bottom: solid 2px !important;*/
 /*    border-bottom-color: blue !important;*/

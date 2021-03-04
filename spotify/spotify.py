@@ -29,13 +29,13 @@ def getTracks(session, data):
 
     for songId in build.keys():
         artist = ', '.join([artist['name'] for artist in build[songId].pop('artists')])
-        print(artist)
         ret = {"Song": build[songId].pop('name'), "Artist": artist, **build[songId]}
         for playlist in duplicateRemoved:
             ret[playlist['name']] = True if playlist['name'] in build[songId]['playlists'] else False
         result['data'].append(ret)
     result['columns'] = columns
     result['data'] = getTrackFeatures(result['data'], accessToken)
+    # print(json.dumps(result))
     return result
 
 
@@ -69,7 +69,7 @@ def getPlayListTracks(playlistId, accessToken):
     while tracks:
         for i, track in enumerate(tracks['items']):
             if track.get('track') is not None and track['track']['type'] == 'track' and track['track']['album'][
-                "album_type"] is not None:
+                "album_type"] is not None and track['track']["preview_url"] is not None:
                 # Add popularity and preview url here
                 # data = {"id": track['track']['id'], "name": track['track']['name'],
                 #         "artist": track['track']['artists'][0]['name']}
@@ -100,3 +100,12 @@ def buildTrackFromPlaylist(playlist, owner):
         return {"name": stripChars(playlist['name']), "id": playlist['id'], "image": playlist['images'][0],
                 "isReadOnly": isReadOnly}
     return None
+
+
+def playSongs(session, data):
+    tokenInfo, _ = getTokenInfo(session, config)
+    accessToken = tokenInfo.get('access_token')
+    sp = spotipy.Spotify(auth=accessToken)
+    sp.start_playback(device_id=data['deviceId'], context_uri=None, uris=data['uris'], offset=data['offset'],
+                      position_ms=None)
+    return 200

@@ -1,17 +1,57 @@
 <div class="player grey lighten-5">
     <div class="row">
-        <div class="col s3">
-            <img id="playerImage"
-                 src="static/music-placeholder.png"
-                 alt="album cover placeholder"
-                 class="circle">
+        <div id="toggle" class="col s12 center hide">
+            <div class="switch">
+                <label>
+                    Preview
+                    <input type="checkbox" onchange="onPLayerFunctionChange(this)">
+                    <span class="lever"></span>
+                    Play with Spotify
+                </label>
+            </div>
         </div>
-        <div class="col s9">
-            <div class="col s12 center"><p id="playerSongTitle">Click on a song to play</p></div>
-            <div class="col s12 center" id="playButton" onclick="onPlayerPlay()"><i
-                    class="material-icons">play_arrow</i></div>
-            <div class="col s12 center hide" id="pauseButton" onclick="onPlayerPause()"><i
-                    class="material-icons">pause</i></div>
+        <div id="preview-player">
+            <div class="col s3">
+                <img id="playerImage"
+                     src="static/music-placeholder.png"
+                     alt="album cover placeholder"
+                     class="circle">
+            </div>
+            <div class="col s9">
+                <div class="col s12 center"><p class="playerSongTitle">Click on a song to play</p></div>
+                <div class="col s12 center" id="playButton" onclick="onPlayerPlay()"><i
+                        class="material-icons">play_arrow</i></div>
+                <div class="col s12 center hide" id="pauseButton" onclick="onPlayerPause()"><i
+                        class="material-icons">pause</i></div>
+            </div>
+        </div>
+        <div id="spotifyPlayer" class="hide">
+            {#            <div class="col s3">#}
+            {#                <img id="playerImage"#}
+            {#                     src="static/music-placeholder.png"#}
+            {#                     alt="album cover placeholder"#}
+            {#                     class="circle">#}
+            {#            </div>#}
+            <div class="col s12">
+                <div class="col s12 center"><p class="playerSongTitle">Click on a song to play</p></div>
+                <div class="col s12">
+                    <input onchange="onSeek(this)" id="sp_seekbar" type="range" value="0" min="0"
+                           max="100"/>
+                </div>
+                <div class="col s4">
+                    <div class="col s12 center" id="sp_previous" onclick="onPrevious()">
+                        <i class="material-icons">skip_previous</i>
+                    </div>
+                </div>
+                <div class="col s4 center">
+                    <i class="material-icons" id="sp_playButton" onclick="onPlayerPlay()">play_arrow</i>
+                    <i class="material-icons hide" id="sp_pauseButton" onclick="onPlayerPause()">pause</i>
+                </div>
+
+                <div class="col s4 center" id="sp_next" onclick="onNext()">
+                    <i class="material-icons">skip_next</i>
+                </div>
+            </div>
         </div>
     </div>
 </div>

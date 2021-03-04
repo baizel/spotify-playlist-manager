@@ -7,7 +7,6 @@ let initTableHTML = undefined
 let chosenPlaylists = [];
 let storedData = {}
 let filterOptions = [];
-let currentAudio = null;
 
 window.onload = function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
@@ -142,6 +141,7 @@ async function getPlaylistTracks(playlists) {
     handleSpinnerState();
     return fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists), cache: "reload"})
         .then((response) => {
+            console.log(response)
             return response.json()
         }).finally((() => {
             resolvedRequests++
@@ -177,69 +177,25 @@ function prefixHash(val) {
     return '#' + val;
 }
 
+function removeClickClass(table) {
+    // table.rows().every(function () {
+    //     this.nodes().to$().removeClass('rowClick')
+    // })
+}
+
 function onClickRow(context, table) {
     const song = table.row(context).data()
-    playSampleSong(song)
-    table.rows().every(function () {
-        this.nodes().to$().removeClass('rowClick')
-    })
-
-    const $row = table.row(context).nodes().to$();
-    const hasClass = $row.hasClass('rowClick');
-    if (hasClass) {
-        $row.removeClass('rowClick')
-    } else {
-        $row.addClass('rowClick')
-    }
-}
-
-function playSampleSong(song) {
-    loadMusic(song.preview_url);
-    let img = document.getElementById('playerImage');
-    let title = document.getElementById('playerSongTitle');
-    title.innerText = song.Song;
-    img.src = song.images[0].url;
-    onPlayerPlay();
-}
-
-function showPlayState() {
-    let playButton = document.getElementById('playButton');
-    let pauseButton = document.getElementById('pauseButton');
-    playButton.classList.remove('hide');
-    pauseButton.classList.add('hide');
-}
-
-function showPauseState() {
-    let playButton = document.getElementById('playButton');
-    let pauseButton = document.getElementById('pauseButton');
-    playButton.classList.add('hide');
-    pauseButton.classList.remove('hide');
-}
-
-function onPlayerPause() {
-    if (currentAudio) {
-        currentAudio.pause()
-        showPlayState();
-    }
-}
-
-function onPlayerPlay() {
-    if (currentAudio) {
-        currentAudio.play()
-        showPauseState();
-    }
-}
-
-function loadMusic(url) {
-    if (!currentAudio) {
-        currentAudio = new Audio();
-    }
-    currentAudio.onended = function () {
-        showPlayState();
-    };
-
-    currentAudio.setAttribute('src', url);
-    currentAudio.load();
+    const tableData = getAppliedData(table);
+    playSong(song, tableData)
+    removeClickClass(table);
+    // applyRowClick(table.row(context).nodes().to$());
+    // const $clickedRow = table.row(context).nodes().to$();
+    // const hasClass = $clickedRow.hasClass('rowClick');
+    // if (hasClass) {
+    //     $clickedRow.removeClass('rowClick')
+    // } else {
+    //     $clickedRow.addClass('rowClick')
+    // }
 }
 
 function handleSpinnerState() {
@@ -249,8 +205,8 @@ function handleSpinnerState() {
     }
 }
 
-function appliedData() {
-    //table.rows( { order: 'applied' } ).data()
+function getAppliedData(table) {
+    return table.rows({order: 'applied'}).data().toArray();
 }
 
 function getPageHeight() {
@@ -286,4 +242,20 @@ function setReadOnlyCheckBoxes() {
             }
         });
     })
+}
+
+function updateTableSelection(uri) {
+    const table = $(prefixHash(SONG_TABLE_ID)).DataTable();
+    const indexOfRow = table.rows().data().toArray().findIndex(x => x.uri === uri);
+    // removeClickClass(table);
+    // applyRowClick(table.rows(indexOfRow).nodes().to$());
+}
+
+function applyRowClick($clickedRow) {
+    const hasClass = $clickedRow.hasClass('rowClick');
+    if (hasClass) {
+        $clickedRow.removeClass('rowClick')
+    } else {
+        $clickedRow.addClass('rowClick')
+    }
 }

@@ -17,17 +17,18 @@ def getTracks(session, data):
     data = json.loads(data)
     duplicateRemoved = [dict(t) for t in {tuple(d.items()) for d in data}]
     columns = [{"title": "Song", "data": "Song"}, {"title": "Artist", "data": "Artist"}]
+    playlistNames = [playlist['name'] for playlist in duplicateRemoved]
 
     for playlist in duplicateRemoved:
         columns.append({"title": playlist['name'], "data": playlist['name'], "id": playlist['id']})
-        transformTrackInfos(build, playlist, accessToken)
+        transformTrackInfos(build, playlist, playlistNames, accessToken)
 
     result['columns'] = columns
     result['data'] = getTrackFeatures(list(build.values()), accessToken)
     return result
 
 
-def transformTrackInfos(memoizedData, playlist, accessToken):
+def transformTrackInfos(memoizedData, playlist, allPlaylistsNames, accessToken):
     sp = spotipy.Spotify(auth=accessToken)
     playlistId = playlist['id']
     if playlistId == LIKED_SONGS_ID:
@@ -40,13 +41,14 @@ def transformTrackInfos(memoizedData, playlist, accessToken):
                 "album_type"] is not None and track['track']["preview_url"] is not None:
                 id = track['track']['id']
                 if memoizedData.get(id) is None:
-                    memoizedData[id] = track['track']
+                    memoizedData[id] = {**track['track'], **dict.fromkeys(allPlaylistsNames, False)}
                     memoizedData[id]['playlists'] = []
 
                 memoizedData[id]['playlists'].append(playlist['name'])
-                memoizedData[id]["Song"] = memoizedData[id].pop('name')
-                memoizedData[id]["Artist"] = ', '.join([artist['name'] for artist in memoizedData[id].pop('artists')])
-                memoizedData[id][playlist['name']] = True if playlist['name'] in memoizedData[id]['playlists'] else False
+                memoizedData[id]["Song"] = memoizedData[id]['name']
+                memoizedData[id]["Artist"] = ', '.join([artist['name'] for artist in memoizedData[id]['artists']])
+                memoizedData[id][playlist['name']] = True if playlist['name'] in memoizedData[id][
+                    'playlists'] else False
         if tracks['next']:
             tracks = sp.next(tracks)
         else:

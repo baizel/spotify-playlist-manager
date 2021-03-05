@@ -1,7 +1,7 @@
 // //TODO: Handle toggle switch while connected to Web SDK (diusconnect and play preview)
 // //TODO: make player UI nicer, truncate text, nicer icons/buttons, make icons hoverable etc
 // //TODO: clean up code
-// //TODO: add seleect listing device
+// //TODO: add select listing device
 // //TODO: add image preview in in player if possible
 // //TODO: handle error paths :)
 //
@@ -107,7 +107,7 @@ function playSong(song, tableData) {
     if (!isSpotifyPlayer) {
         loadMusic(song.preview_url);
         updatePlayerTitle(song.Song);
-        document.getElementById('playerImage').src = song.images[0].url;
+        document.getElementById('playerImage').src = getImageUrl(song).url;
         onPlayerPlay();
     } else {
         stopAudioIfPlaying();

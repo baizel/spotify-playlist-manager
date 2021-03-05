@@ -61,7 +61,7 @@ function drawTable(onDraw) {
         "paging": false,
         "createdRow": function (row, data, index) {
             const id = data.id;
-            const imageUrl = data.images[2] ? data.images[2].url : "";
+            const imageUrl = getImageUrl(data).url;
             const songName = data.Song;
             formatSongColumn(row, 0, {imageUrl, songName});
             for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - filterOptions.length; i++) {

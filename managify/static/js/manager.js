@@ -10,13 +10,41 @@ let storedData = {}
 let filterOptions = [];
 let allGeneresInCurrentStage;
 let isEditMode = false; //TODO: add this feature
+let genreFilters = [];
 
 document.addEventListener('DOMContentLoaded', function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
     const modalElem = document.querySelectorAll('.modal');
     const modalInstance = M.Modal.init(modalElem, {onCloseEnd: handleFilterChange});
+
     updateFilterOptions();
 });
+
+function showFilterByGenreOptions() {
+    const chipFilter = document.getElementById('genres');
+    const chipOptions = Object.keys(allGeneresInCurrentStage);
+    let html = "";
+    chipOptions.forEach(genre => {
+        const isClicked = genreFilters.includes(genre) ? "chipClick" : ""
+        html = html + `<div class="chip ${isClicked}" id="${genre}" onclick="onChipFilter(this)">${genre}</div>`
+    })
+
+    chipFilter.innerHTML = html;
+}
+
+
+function onChipFilter(context) {
+    let genre = context.id;
+    if (!genreFilters.includes(genre)) {
+        genreFilters.push(genre);
+        context.classList.add("chipClick");
+    } else {
+        genreFilters = genreFilters.filter(function (chosenGenre) {
+            return chosenGenre !== genre;
+        })
+        context.classList.remove("chipClick");
+    }
+}
 
 function genreFormatter(data) {
     let result = []
@@ -42,7 +70,7 @@ async function handleFilterChange() {
     // showLoader();
     updateFilterOptions();
     // drawTable(() => hideLoader());
-    await updateTable();
+    await updateTable(true);
 }
 
 async function toggleAndUpdateTable(id, name, isReadOnly) {
@@ -56,9 +84,11 @@ async function toggleAndUpdateTable(id, name, isReadOnly) {
 
 }
 
-async function updateTable() {
-    storedData = await getPlaylistTracks(chosenPlaylists);
+async function updateTable(isCachedData) {
+    const cachePolicy = isCachedData ? "force-cache" : "default" //this does not work, need to stop calling the sever evrytime
+    storedData = await getPlaylistTracks(chosenPlaylists, cachePolicy);
     allGeneresInCurrentStage = buildGenres();
+    showFilterByGenreOptions();
     drawTable(() => {
         initSearchBar();
     });
@@ -184,10 +214,11 @@ function handleCheckbox(target, payload) {
     console.log(payload.songId);
 }
 
-async function getPlaylistTracks(playlists) {
+async function getPlaylistTracks(playlists, cachePolicy) {
+    const cache = cachePolicy ? cachePolicy : "default";
     numberOfRequests++;
     handleSpinnerState();
-    return fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists), cache: "reload"})
+    return fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists), cache: cache})
         .then((response) => {
             return response.json()
         }).finally((() => {

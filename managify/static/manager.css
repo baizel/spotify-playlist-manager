@@ -62,7 +62,9 @@ header, main, footer {
 .rowClick {
     background-color: #ffebee !important;
 }
-
+.chipClick {
+    background-color: #ef9a9a !important;
+}
 .player {
     padding-top: 5px;
     padding-bottom: 5px;
@@ -93,6 +95,7 @@ input[type=range]::-moz-range-thumb {
 input[type=range]::-ms-thumb {
     background-color: #1DB954;
 }
+
 
 /*.rowClick td {*/
 /*    border-bottom: solid 2px !important;*/

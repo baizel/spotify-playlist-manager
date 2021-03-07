@@ -3,11 +3,19 @@
 
     <ul>
         {#        <li><a class="subheader center">Manage Playlists</a></li>#}
-        <li class="search">
-            <div class="content">
-                <div class="search-wrapper">
-                    <input id="search" placeholder="Search"><i class="material-icons">search</i>
-                    <div class="search-results"></div>
+        {#        <li class="search">#}
+        {#            <div class="content">#}
+        {#                <div class="search-wrapper">#}
+        {#                    <input id="search" placeholder="Search"><i class="material-icons">search</i>#}
+        {#                    <div class="search-results"></div>#}
+        {#                </div>#}
+        {#            </div>#}
+        {#        </li>#}
+        <li>
+            <div class="center">
+                <div class="input-field">
+                    <i class="material-icons prefix">search</i>
+                    <input type="text" placeholder="search" id="autocomplete-input">
                 </div>
             </div>
         </li>
@@ -15,9 +23,8 @@
             <ul class="collapsible">
                 <li>
                     <div class="collapsible-header"><i class="material-icons">add</i>Add Other Playlists</div>
-                    <div class="collapsible-body">
-                        <span class="center-align">Add playlist by Id coming soon</span>
-
+                    <div class="collapsible-body center-align">
+                        <span>Add playlist by Id coming soon</span>
                     </div>
                 </li>
                 <li class="active">
@@ -25,10 +32,12 @@
                     <div class="collapsible-body">
                         <ul>
                             {% for playlist in data %}
-                                <li class="collection-item avatar" id="{{ playlist.id }}"
+                                <li class="playlist-content"
                                     onclick="toggleAndUpdateTable('{{ playlist.id }}','{{ playlist.name }}', '{{ playlist.isReadOnly }}')">
-                                    <img src="{{ playlist.image.url }}" alt="" class="circle">
-                                    <p>{{ playlist.name }}</p>
+                                    <div id="{{ playlist.id }}" class="collection-item avatar valign-wrapper">
+                                        <img src="{{ playlist.image.url }}" alt="" class="circle">
+                                        <p>{{ playlist.name }}</p>
+                                    </div>
                                 </li>
                             {% endfor %}
                         </ul>

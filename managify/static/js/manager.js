@@ -43,12 +43,13 @@ async function toggleAndUpdateTable(id, name, isReadOnly) {
 
 async function updateTable() {
     storedData = await getPlaylistTracks(chosenPlaylists);
-    drawTable();
+    drawTable(() => {
+        initSearchBar();
+    });
 }
 
 function drawTable(onDraw) {
     function draw(setting) {
-        initSearchBar();
         setReadOnlyCheckBoxes();
         const func = onDraw || $.noop;
         func(setting);

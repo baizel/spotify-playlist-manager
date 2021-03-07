@@ -25,6 +25,15 @@ header, main, footer {
     padding-left: 6px;
 }
 
+.playlist-content {
+    padding-left: 20px !important;
+}
+
+.playlist-content:hover {
+    background: lightgray;
+    cursor: pointer;
+}
+
 .nodata {
     height: 85vh;
 }

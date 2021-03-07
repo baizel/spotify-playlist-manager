@@ -1,12 +1,15 @@
 const SONG_TABLE_ID = "songTable"
 const SONG_TABLE_CONTAINER_ID = "tableContainer"
 const SKIPPED_COLUMNS = 2;
+const GENRES_TO_DISPLAY = 1
 let numberOfRequests = 0;
 let resolvedRequests = 0;
 let initTableHTML = undefined
 let chosenPlaylists = [];
 let storedData = {}
 let filterOptions = [];
+let allGeneresInCurrentStage;
+let isEditMode = false; //TODO: add this feature
 
 document.addEventListener('DOMContentLoaded', function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
@@ -15,9 +18,21 @@ document.addEventListener('DOMContentLoaded', function () {
     updateFilterOptions();
 });
 
+function genreFormatter(data) {
+    let result = []
+    for (const [key,] of data.entries()) {
+        result.push(key)
+        if (result.length >= GENRES_TO_DISPLAY) {
+            break;
+        }
+    }
+    return result;
+}
+
 function updateFilterOptions() {
     const checkboxes = document.querySelectorAll('input[name="filterCheckbox"]:checked');
-    filterOptions = [];
+
+    filterOptions = [{title: "genres", data: "genres", isDataFormatted: true, formatter: genreFormatter}];
     Array.prototype.forEach.call(checkboxes, function (el) {
         filterOptions.push({title: el.value, data: el.id});
     });
@@ -43,9 +58,28 @@ async function toggleAndUpdateTable(id, name, isReadOnly) {
 
 async function updateTable() {
     storedData = await getPlaylistTracks(chosenPlaylists);
+    allGeneresInCurrentStage = buildGenres();
     drawTable(() => {
         initSearchBar();
     });
+}
+
+function buildGenres() {
+    let allGenreCount = {}
+    storedData.data.forEach(songInfo => {
+        let songGenres = {}
+        songInfo.artists.forEach(artist => {
+            let artistId = artist.id
+            storedData.artists[artistId].genres.forEach((genre => {
+                allGenreCount[genre] = allGenreCount[genre] !== undefined ? allGenreCount[genre] + 1 : 1;
+                songGenres[genre] = songGenres[genre] !== undefined ? songGenres[genre] + 1 : 1;
+            }))
+        })
+        songInfo['genres'] = new Map(
+            Object.entries(songGenres).sort(([, a], [, b]) => b - a)
+        );
+    });
+    return allGenreCount
 }
 
 function drawTable(onDraw) {
@@ -71,6 +105,9 @@ function drawTable(onDraw) {
                     playlistId: storedData.columns[i].id
                 };
                 formatCheckboxColumns(row, i, payload, Boolean(data[storedData.columns[i].data]));
+            }
+            for (let i = storedData.columns.length - filterOptions.length; i < storedData.columns.length; i++) {
+                formatFilterOptions(row, i, data[storedData.columns[i].data]);
             }
         },
         "rowCallback": function (row, data, displayNum, displayIndex, dataIndex) {
@@ -119,6 +156,18 @@ function formatSongColumn(row, columnIndex, {imageUrl, songName}) {
     $(`td:eq(${columnIndex})`, row).html(imgHTML);
 }
 
+function formatFilterOptions(row, columnIndex, data) {
+    let html = data;
+    if (storedData.columns[columnIndex].isDataFormatted) {
+        const formattedData = storedData.columns[columnIndex].formatter(data)
+        html = "";
+        formattedData.forEach(genre => {
+            html = html + `<div class="chip">${genre}</div>`
+        })
+    }
+    $(`td:eq(${columnIndex})`, row).html(html);
+}
+
 function formatCheckboxColumns(row, columnIndex, payload, isChecked) {
     const isCheckedAttr = isChecked ? "checked" : "";
     const pld = JSON.stringify(payload);
@@ -136,7 +185,6 @@ function handleCheckbox(target, payload) {
 }
 
 async function getPlaylistTracks(playlists) {
-    console.log(playlists)
     numberOfRequests++;
     handleSpinnerState();
     return fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists), cache: "reload"})

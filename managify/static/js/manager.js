@@ -7,6 +7,8 @@ let resolvedRequests = 0;
 let initTableHTML = undefined
 let chosenPlaylists = [];
 let storedData = {}
+let cachedDataResult;
+let nonFilteredValue;
 let filterOptions = [];
 let allGeneresInCurrentStage;
 let isEditMode = false; //TODO: add this feature
@@ -22,11 +24,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function showFilterByGenreOptions() {
     const chipFilter = document.getElementById('genres');
-    const chipOptions = Object.keys(allGeneresInCurrentStage);
+    const chipOptions = Array.from(new Set(storedData.data.map(a => a.topGenre)))
     let html = "";
     chipOptions.forEach(genre => {
         const isClicked = genreFilters.includes(genre) ? "chipClick" : ""
-        html = html + `<div class="chip ${isClicked}" id="${genre}" onclick="onChipFilter(this)">${genre}</div>`
+        if (genre) {
+            html = html + `<div class="chip ${isClicked}" id="${genre}" onclick="onChipFilter(this)">${genre}</div>`
+        }
     })
 
     chipFilter.innerHTML = html;
@@ -84,14 +88,28 @@ async function toggleAndUpdateTable(id, name, isReadOnly) {
 
 }
 
-async function updateTable(isCachedData) {
-    const cachePolicy = isCachedData ? "force-cache" : "default" //this does not work, need to stop calling the sever evrytime
-    storedData = await getPlaylistTracks(chosenPlaylists, cachePolicy);
-    allGeneresInCurrentStage = buildGenres();
+async function updateTable(forceUseLastFetchedData) {
+    if (forceUseLastFetchedData && cachedDataResult) {
+        storedData = deepCopyHack(cachedDataResult);
+    } else {
+        storedData = await getPlaylistTracks(chosenPlaylists, "default");
+        cachedDataResult = deepCopyHack(storedData);
+    }
+    allGeneresInCurrentStage = buildGenres(); // BuildGeneres mutates storedData atm :/ TODO: change this
+    nonFilteredValue = deepCopyHack(storedData);
     showFilterByGenreOptions();
+    applyGenreFilter()
     drawTable(() => {
         initSearchBar();
     });
+}
+
+function applyGenreFilter() {
+    if (genreFilters.length) {
+        storedData.data = nonFilteredValue.data.filter(x => genreFilters.includes(x.topGenre));
+    } else {
+        storedData.data = deepCopyHack(nonFilteredValue.data);
+    }
 }
 
 function buildGenres() {
@@ -105,9 +123,13 @@ function buildGenres() {
                 songGenres[genre] = songGenres[genre] !== undefined ? songGenres[genre] + 1 : 1;
             }))
         })
-        songInfo['genres'] = new Map(
-            Object.entries(songGenres).sort(([, a], [, b]) => b - a)
-        );
+        const entries = Object.entries(songGenres).sort(([, a], [, b]) => b - a);
+        if (entries[0]) {
+            songInfo['topGenre'] = entries[0][0];
+        }
+
+        songInfo['genres'] = new Map(entries);
+
     });
     return allGenreCount
 }
@@ -336,4 +358,28 @@ function applyRowClick($clickedRow) {
     } else {
         $clickedRow.addClass('rowClick')
     }
+}
+
+function deepCopyHack(data) {
+    return JSON.parse(JSON.stringify(data, replacer), receiver);
+}
+
+function replacer(key, value) {
+    if (value instanceof Map) {
+        return {
+            dataType: 'Map',
+            value: Array.from(value.entries()), // or with spread: value: [...value]
+        };
+    } else {
+        return value;
+    }
+}
+
+function receiver(key, value) {
+    if (typeof value === 'object' && value !== null) {
+        if (value.dataType === 'Map') {
+            return new Map(value.value);
+        }
+    }
+    return value;
 }

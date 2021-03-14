@@ -30,7 +30,7 @@ function onEditMode() {
     const table = getTableData();
     isEditMode = document.getElementById('isEditMode').checked;
     const editableColumns = [];
-    for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - getNumberOfShownFilters(); i++) {
+    for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - filterOptions.length; i++) {
         editableColumns.push(i);
     }
     table.columns(indx => {
@@ -79,10 +79,6 @@ function genreFormatter(data) {
         }
     }
     return result;
-}
-
-function getNumberOfShownFilters() {
-    return document.querySelectorAll('input[name="filterCheckbox"]:checked').length + 1; //+ 1 for genre column
 }
 
 function updateFilterOptions() {

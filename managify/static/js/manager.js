@@ -130,6 +130,7 @@ async function updateTable(forceUseLastFetchedData) {
     drawTable(() => {
         initSearchBar();
         setEditModeCheckbox();
+        onEditMode();
     });
 }
 

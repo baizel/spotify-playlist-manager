@@ -11,16 +11,36 @@ let cachedDataResult;
 let nonFilteredValue;
 let filterOptions = [];
 let allGeneresInCurrentStage;
-let isEditMode = false; //TODO: add this feature
+let isEditMode = true; //TODO: add this feature
 let genreFilters = [];
 
 document.addEventListener('DOMContentLoaded', function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
     const modalElem = document.querySelectorAll('.modal');
     const modalInstance = M.Modal.init(modalElem, {onCloseEnd: handleFilterChange});
-
+    setEditModeCheckbox();
     updateFilterOptions();
 });
+
+function setEditModeCheckbox() {
+    document.getElementById('isEditMode').checked = isEditMode;
+}
+
+function onEditMode() {
+    const table = getTableData();
+    isEditMode = document.getElementById('isEditMode').checked;
+    const editableColumns = [];
+    for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - filterOptions.length; i++) {
+        editableColumns.push(i);
+    }
+    table.columns(indx => {
+        return editableColumns.includes(indx);
+    }).visible(isEditMode);
+}
+
+function getTableData() {
+    return $(prefixHash(SONG_TABLE_ID)).DataTable();
+}
 
 function showFilterByGenreOptions() {
     const chipFilter = document.getElementById('genres');
@@ -74,6 +94,7 @@ async function handleFilterChange() {
     // showLoader();
     updateFilterOptions();
     // drawTable(() => hideLoader());
+    //TODO: this is bad, should load all filters columns and set visibility instead
     await updateTable(true);
 }
 
@@ -101,6 +122,7 @@ async function updateTable(forceUseLastFetchedData) {
     applyGenreFilter()
     drawTable(() => {
         initSearchBar();
+        setEditModeCheckbox();
     });
 }
 
@@ -194,7 +216,7 @@ function drawTable(onDraw) {
 function deleteTableFromDOM() {
     //clear old data table
     if ($.fn.DataTable.isDataTable(prefixHash(SONG_TABLE_ID))) {
-        const dtApi = $(prefixHash(SONG_TABLE_ID)).DataTable();
+        const dtApi = getTableData();
         dtApi.destroy();
         document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML = initTableHTML;
     }
@@ -342,7 +364,7 @@ function setReadOnlyCheckBoxes() {
 }
 
 function updateTableSelection(uri) {
-    const table = $(prefixHash(SONG_TABLE_ID)).DataTable();
+    const table = getTableData();
     const tableData = getIndexedData(table);
     const indexOfRow = tableData.findIndex(x => x.uri === uri);
     if (indexOfRow >= 0) {

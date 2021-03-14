@@ -98,17 +98,17 @@ function updateFilterOptions() {
 }
 
 async function handleFilterChange() {
+    showLoader();
     updateFilterOptions();
-    const table = getTableData();
-    filterOptions.forEach(ele => {
-        table.column(`:contains(${ele.title})`).visible(ele.visible);
-    })
+    updateTable(true).finally(() => {
+        hideLoader();
+    });
 }
 
 async function toggleAndUpdateTable(id, name, isReadOnly) {
     toggleToList({id, name, isReadOnly});
     toggleNoDataContent()
-    await updateTable().then(() => {
+    updateTable().then(() => {
         if (!(Boolean(storedData.data) && Boolean(storedData.data.length))) {
             deleteTableFromDOM();
         }
@@ -117,20 +117,24 @@ async function toggleAndUpdateTable(id, name, isReadOnly) {
 }
 
 async function updateTable(forceUseLastFetchedData) {
-    if (forceUseLastFetchedData && cachedDataResult) {
-        storedData = deepCopyHack(cachedDataResult);
-    } else {
-        storedData = await getPlaylistTracks(chosenPlaylists, "default");
-        cachedDataResult = deepCopyHack(storedData);
-    }
-    allGeneresInCurrentStage = buildGenres(); // BuildGeneres mutates storedData atm :/ TODO: change this
-    nonFilteredValue = deepCopyHack(storedData);
-    showFilterByGenreOptions();
-    applyGenreFilter()
-    drawTable(() => {
-        initSearchBar();
-        setEditModeCheckbox();
-        onEditMode();
+    return new Promise(async resolve => {
+        if (forceUseLastFetchedData && cachedDataResult) {
+            storedData = deepCopyHack(cachedDataResult);
+        } else {
+            storedData = await getPlaylistTracks(chosenPlaylists, "default");
+            cachedDataResult = deepCopyHack(storedData);
+        }
+        allGeneresInCurrentStage = buildGenres(); // BuildGeneres mutates storedData atm :/ TODO: change this
+        nonFilteredValue = deepCopyHack(storedData);
+        showFilterByGenreOptions();
+        applyGenreFilter()
+        drawTable(() => {
+            initSearchBar();
+            setEditModeCheckbox();
+            onEditMode();
+            console.log("call resolve")
+            resolve();
+        });
     });
 }
 

@@ -11,7 +11,7 @@ let cachedDataResult;
 let nonFilteredValue;
 let filterOptions = [];
 let allGeneresInCurrentStage;
-let isEditMode = true; //TODO: add this feature
+let isEditMode = false;
 let genreFilters = [];
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -261,9 +261,15 @@ function formatCheckboxColumns(row, columnIndex, payload, isChecked) {
 }
 
 function handleCheckbox(target, payload) {
-    console.log("To do api request to add and remove from playlist");
-    console.log(target.checked);
-    console.log(payload.songId);
+    payload["isAdd"] = target.checked
+    console.log(JSON.stringify(payload))
+    fetch("/api/sp/editPlaylist", {method: 'post', body: JSON.stringify(payload)})
+        .then((response) => {
+            return response.json()
+        }).catch(reason => {
+        target.checked = !target.checked;
+        toast(`Failed getting editing playlist - ${reason}. Try again! `)
+    });
 }
 
 async function getPlaylistTracks(playlists, cachePolicy) {
@@ -276,7 +282,9 @@ async function getPlaylistTracks(playlists, cachePolicy) {
         }).finally((() => {
             resolvedRequests++
             handleSpinnerState();
-        }));
+        })).catch(reason => {
+            toast(`Failed getting tracks - ${reason}. Try again! `)
+        });
 
 }
 
@@ -412,4 +420,8 @@ function receiver(key, value) {
         }
     }
     return value;
+}
+
+function toast(mssg) {
+    M.toast({html: mssg})
 }

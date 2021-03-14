@@ -11,8 +11,13 @@ config = current_app.config
 @bp.route('/play', methods=['POST'])
 def play():
     from spotify.spotify import playSongs
-    playSongs(session, json.loads(request.data))
-    return {}, 200
+    return playSongs(session, json.loads(request.data))
+
+
+@bp.route('/editPlaylist', methods=['POST'])
+def edit():
+    from spotify.spotify import editPlayList
+    return editPlayList(session, json.loads(request.data))
 
 
 @bp.route('/accessToken', methods=['GET'])

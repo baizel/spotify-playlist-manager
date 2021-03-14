@@ -101,7 +101,18 @@ def playSongs(session, data):
     sp = spotipy.Spotify(auth=accessToken)
     sp.start_playback(device_id=data['deviceId'], context_uri=None, uris=data['uris'], offset=data['offset'],
                       position_ms=None)
-    return 200
+    return {"message": "ok"}, 200
+
+
+def editPlayList(session, data):
+    tokenInfo, _ = getTokenInfo(session, config)
+    accessToken = tokenInfo.get('access_token')
+    sp = spotipy.Spotify(auth=accessToken)
+    if data["isAdd"]:
+        sp.playlist_add_items(data["playlistId"], [data["songId"]])
+    else:
+        sp.playlist_remove_all_occurrences_of_items(data["playlistId"], [data["songId"]])
+    return {"message": "ok"}, 200
 
 
 @cache.memoize(timeout=60 * 60)

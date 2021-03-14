@@ -30,7 +30,7 @@ function onEditMode() {
     const table = getTableData();
     isEditMode = document.getElementById('isEditMode').checked;
     const editableColumns = [];
-    for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - filterOptions.length; i++) {
+    for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - getNumberOfShownFilters(); i++) {
         editableColumns.push(i);
     }
     table.columns(indx => {
@@ -81,21 +81,32 @@ function genreFormatter(data) {
     return result;
 }
 
-function updateFilterOptions() {
-    const checkboxes = document.querySelectorAll('input[name="filterCheckbox"]:checked');
+function getNumberOfShownFilters() {
+    return document.querySelectorAll('input[name="filterCheckbox"]:checked').length + 1; //+ 1 for genre column
+}
 
-    filterOptions = [{title: "genres", data: "genres", isDataFormatted: true, formatter: genreFormatter}];
-    Array.prototype.forEach.call(checkboxes, function (el) {
-        filterOptions.push({title: el.value, data: el.id});
-    });
+function updateFilterOptions() {
+    const checkboxes = document.querySelectorAll('input[name="filterCheckbox"]');
+
+    filterOptions = [{
+        title: "genres",
+        data: "genres",
+        isDataFormatted: true,
+        formatter: genreFormatter,
+        visible: true
+    }];
+    checkboxes.forEach(el => {
+        const isVisible = el.checked;
+        filterOptions.push({title: el.value, data: el.id, visible: isVisible});
+    })
 }
 
 async function handleFilterChange() {
-    // showLoader();
     updateFilterOptions();
-    // drawTable(() => hideLoader());
-    //TODO: this is bad, should load all filters columns and set visibility instead
-    await updateTable(true);
+    const table = getTableData();
+    filterOptions.forEach(ele => {
+        table.column(`:contains(${ele.title})`).visible(ele.visible);
+    })
 }
 
 async function toggleAndUpdateTable(id, name, isReadOnly) {

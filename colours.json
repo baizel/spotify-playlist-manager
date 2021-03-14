@@ -1,0 +1,28 @@
+{
+  "colours": {
+    "text": {
+      "css": {
+        "main": "white-text",
+        "neutral": "white-text",
+        "accent": "green-text"
+      },
+      "hex": {
+        "main": "",
+        "neutral": "",
+        "accent": ""
+      }
+    },
+    "body": {
+      "css": {
+        "main": "",
+        "neutral": "",
+        "accent": ""
+      },
+      "hex": {
+        "main": "",
+        "neutral": "",
+        "accent": ""
+      }
+    }
+  }
+}

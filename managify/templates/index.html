@@ -1,7 +1,96 @@
-<!doctype html>
-<title>Hello from Flask</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block styles %}
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    {% endblock %}
 
-<h1>Login in with Spotify</h1>
-<a href="/auth/login">
-    <button>Login</button>
-</a>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
+    <title>Mixe - Spotify Playlist manager</title>
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        main {
+            flex: 1 0 auto;
+        }
+
+        .btn-large {
+            border-radius: 55px;
+        }
+
+        .login-btn {
+            padding: 20px !important;
+
+        }
+    </style>
+    <!-- CSS  -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<main>
+    <nav role="navigation">
+        <div class="nav-wrapper container">
+            <a id="logo-container" href="#" class="brand-logo center">Mixe</a>
+        </div>
+    </nav>
+    <div class="section no-pad-bot" id="index-banner">
+        <div class="container">
+            <h3 class="header center">Mixe - A Spotify Playlist Manager</h3>
+            <div class="row center">
+                <h5 class="col s12 light">Get an insight into the songs you listen to by seeing the song
+                    features of any playlist you have.
+                    <br>This is a fully open source playlist manager for Spotify which
+                    allows you to to
+                    mash existing playlists together.
+                </h5>
+                <h5 class="header col s12 light">Get started by authorising Spotify by clicking on the button
+                    below</h5>
+                <br><br>
+                <div class="col s12 login-btn">
+                    <a href="/auth/login" class="waves-effect waves-light btn-large"> Authorise Spotify
+                    </a>
+                </div>
+                <div class="col s12 row">
+                    <div class="col l4 s12">
+                        <h5 class="center"> See Song Feature</h5>
+                        <h6>Some of the properties of the songs that are shown can be seen below. There are more
+                            features
+                            that you can filter by to sort your playlist</h6>
+                        <h5>Image Soon to come</h5>
+                    </div>
+                    <div class="col l4 s12">
+                        <h5 class="center"> Play songs directly on Spotify</h5>
+                        <h6>After choosing some playlists you can sort them by features or genre and play and those
+                            songs directly to your Spotify queue! No need to create a playlist from this stage!</h6>
+                        <h5>Image Soon to come</h5>
+                    </div>
+                    <div class="col l4 s12">
+                        <h5 class="center"> View graphs for your playlists</h5>
+                        <h6>This is coming soon! Keep an eye out</h6>
+                        <h5>Image Soon to come</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</main>
+<footer class="page-footer">
+    <div class="container">
+        <div class="col s12 center">
+            <h5>Contact</h5>
+            <ul>
+                <li><a class="white-text" href="mailto:contact@baizel.dev?Subject=Hello">Email</a></li>
+                <li><a class="white-text" href="https://www.github.com/baizel">Github</a></li>
+            </ul>
+        </div>
+    </div>
+</footer>
+</html>

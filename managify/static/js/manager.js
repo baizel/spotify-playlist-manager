@@ -2,6 +2,7 @@ const SONG_TABLE_ID = "songTable"
 const SONG_TABLE_CONTAINER_ID = "tableContainer"
 const SKIPPED_COLUMNS = 2;
 const GENRES_TO_DISPLAY = 1
+
 let numberOfRequests = 0;
 let resolvedRequests = 0;
 let initTableHTML = undefined
@@ -92,8 +93,7 @@ function updateFilterOptions() {
         visible: true
     }];
     checkboxes.forEach(el => {
-        const isVisible = el.checked;
-        filterOptions.push({title: el.value, data: el.id, visible: isVisible});
+        filterOptions.push({title: el.value, data: el.id, visible: true});
     })
 }
 
@@ -116,6 +116,25 @@ async function toggleAndUpdateTable(id, name, isReadOnly) {
 
 }
 
+function hideFilterColumns() {
+    let arr = []
+    let reducer = (accumulator, currentValue) => {
+        accumulator.push(currentValue.value);
+        return accumulator
+    }
+    const checkedValues = new Array(...document.querySelectorAll('input[name="filterCheckbox"]:checked')).reduce(reducer, arr)
+    const table = getTableData();
+    //Shows columns that are enabled by filter
+    //storedData.columns.length - filterOptions.length is to work out how many columns to skip from the first
+    table.columns((indx, data, node) => {
+        return ((checkedValues.includes(node.innerText) && indx >= storedData.columns.length - filterOptions.length) || node.innerText === "genres");
+    }).visible(true);
+    //Hides the others
+    table.columns((indx, data, node) => {
+        return ((!checkedValues.includes(node.innerText) && indx >= storedData.columns.length - filterOptions.length) && node.innerText !== "genres");
+    }).visible(false);
+}
+
 async function updateTable(forceUseLastFetchedData) {
     return new Promise(async resolve => {
         if (forceUseLastFetchedData && cachedDataResult) {
@@ -132,7 +151,7 @@ async function updateTable(forceUseLastFetchedData) {
             initSearchBar();
             setEditModeCheckbox();
             onEditMode();
-            console.log("call resolve")
+            hideFilterColumns();
             resolve();
         });
     });
@@ -181,7 +200,6 @@ function drawTable(onDraw) {
         "order": [],
         "paging": false,
         "createdRow": function (row, data, index) {
-            const id = data.id;
             const imageUrl = getImageUrl(data).url;
             const songName = data.Song;
             formatSongColumn(row, 0, {imageUrl, songName});

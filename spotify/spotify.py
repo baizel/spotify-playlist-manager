@@ -88,7 +88,7 @@ def getTrackFeatures(tracks, accessToken):
 
 
 def buildTrackFromPlaylist(playlist, owner):
-    if len(playlist['images']) > 0:
+    if playlist['images'] is not None and len(playlist['images']) > 0:
         isReadOnly = False if playlist['owner']['id'] == owner['id'] else True
         return {"name": stripChars(playlist['name']), "id": playlist['id'], "image": playlist['images'][0],
                 "isReadOnly": isReadOnly}

@@ -5,8 +5,6 @@ from utils.utils import getTokenInfo
 
 bp = Blueprint('sp', __name__, url_prefix='/api/sp')
 
-config = current_app.config
-
 
 @bp.route('/play', methods=['POST'])
 def play():
@@ -22,6 +20,7 @@ def edit():
 
 @bp.route('/accessToken', methods=['GET'])
 def token():
+    config = current_app.config
     tokenInfo, _ = getTokenInfo(session, config)
     return {'token': tokenInfo['access_token']}
 

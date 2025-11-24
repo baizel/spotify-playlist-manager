@@ -1,3 +1,4 @@
+import json
 from flask import Flask
 from flask_caching import Cache
 
@@ -9,7 +10,10 @@ app.config.from_mapping(
 )
 
 # load the instance config, if it exists, when not testing
-app.config.from_json('config.json', silent=False)
+try:
+    app.config.from_file("config.json", load=json.load)
+except FileNotFoundError:
+    pass
 
 cache = Cache(app)
 with app.app_context():

@@ -5,10 +5,8 @@ from app import cache
 import spotipy
 import json
 
-config = current_app.config
-
-
 def getTracks(session, data):
+    config = current_app.config
     tokenInfo, _ = getTokenInfo(session, config)
     accessToken = tokenInfo.get('access_token')
     result = {"data": [], "columns": [], "artists": {}}
@@ -96,6 +94,7 @@ def buildTrackFromPlaylist(playlist, owner):
 
 
 def playSongs(session, data):
+    config = current_app.config
     tokenInfo, _ = getTokenInfo(session, config)
     accessToken = tokenInfo.get('access_token')
     sp = spotipy.Spotify(auth=accessToken)
@@ -105,6 +104,7 @@ def playSongs(session, data):
 
 
 def editPlayList(session, data):
+    config = current_app.config
     tokenInfo, _ = getTokenInfo(session, config)
     accessToken = tokenInfo.get('access_token')
     sp = spotipy.Spotify(auth=accessToken)

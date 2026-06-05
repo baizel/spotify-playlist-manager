@@ -1,6 +1,6 @@
 import json
 
-from flask import Blueprint, session, request, current_app
+from flask import Blueprint, session, request, current_app, jsonify
 from utils.utils import getTokenInfo
 
 bp = Blueprint('sp', __name__, url_prefix='/api/sp')
@@ -59,4 +59,9 @@ def create_playlist():
 @bp.route('/discover', methods=['POST'])
 def discover():
     from spotify.spotify import getRecommendations
-    return getRecommendations(session, json.loads(request.data)), 200
+    import spotipy
+    try:
+        result = getRecommendations(session, json.loads(request.data))
+        return jsonify(result), 200
+    except spotipy.exceptions.SpotifyException as e:
+        return jsonify({"error": str(e)}), e.http_status or 500

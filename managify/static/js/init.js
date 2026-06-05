@@ -8,9 +8,9 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function getImageUrl(songInfo) {
-    if (songInfo.album.images)
+    if (songInfo.album && songInfo.album.images && songInfo.album.images.length)
         return songInfo.album.images.reduce(function (prev, curr) {
             return prev.height < curr.height ? prev : curr;
         });
-    return "";
+    return { url: "" };
 }

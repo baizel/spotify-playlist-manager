@@ -99,6 +99,7 @@ function onChipFilter(context) {
 }
 
 function genreFormatter(data) {
+    if (!data || typeof data.entries !== 'function') return [];
     let result = []
     for (const [key,] of data.entries()) {
         result.push(key)
@@ -115,12 +116,17 @@ function updateFilterOptions() {
     filterOptions = [{
         title: "genres",
         data: "genres",
+        defaultContent: "",
         isDataFormatted: true,
         formatter: genreFormatter,
-        visible: true
+        visible: true,
+        render: function(data, type) {
+            if (type !== 'display' || !data || typeof data.entries !== 'function') return '';
+            return genreFormatter(data).map(g => `<div class="chip" style="font-size:11px;height:20px;line-height:20px">${g}</div>`).join('');
+        }
     }];
     checkboxes.forEach(el => {
-        filterOptions.push({ title: el.value, data: el.id, visible: true });
+        filterOptions.push({ title: el.value, data: el.id, defaultContent: "", visible: true });
     })
 }
 

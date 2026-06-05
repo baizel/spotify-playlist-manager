@@ -108,6 +108,42 @@
             </div>
         </div>
         <div id="visuals-content" style="display:none; padding-top: 16px;">
+            <div class="row" style="margin-bottom: 4px; padding: 0 12px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#666;">
+                    <span>X axis</span>
+                    <select id="scatterXAxis" onchange="refreshVisuals()" style="font-size:12px; border:1px solid #ccc; border-radius:4px; padding:2px 6px; height:28px; display:inline-block; width:auto;">
+                        <option value="energy" selected>Energy</option>
+                        <option value="valence">Positiveness</option>
+                        <option value="danceability">Danceability</option>
+                        <option value="tempo">BPM</option>
+                        <option value="acousticness">Acousticness</option>
+                        <option value="instrumentalness">Instrumentalness</option>
+                        <option value="liveness">Liveness</option>
+                        <option value="speechiness">Speechiness</option>
+                        <option value="loudness">Loudness</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#666;">
+                    <span>Y axis</span>
+                    <select id="scatterYAxis" onchange="refreshVisuals()" style="font-size:12px; border:1px solid #ccc; border-radius:4px; padding:2px 6px; height:28px; display:inline-block; width:auto;">
+                        <option value="energy">Energy</option>
+                        <option value="valence" selected>Positiveness</option>
+                        <option value="danceability">Danceability</option>
+                        <option value="tempo">BPM</option>
+                        <option value="acousticness">Acousticness</option>
+                        <option value="instrumentalness">Instrumentalness</option>
+                        <option value="liveness">Liveness</option>
+                        <option value="speechiness">Speechiness</option>
+                        <option value="loudness">Loudness</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:160px; max-width:280px;">
+                    <i class="material-icons" style="font-size:18px; color:#999;">search</i>
+                    <input id="visualsSearch" type="text" oninput="onVisualsSearch(this.value)"
+                           placeholder="Search songs on chart…"
+                           style="font-size:12px; border:none; border-bottom:1px solid #ccc; outline:none; padding:2px 4px; width:100%; height:28px;">
+                </div>
+            </div>
             <div class="row" style="margin-bottom: 0">
                 <div class="col s12 m8" id="moodMapContainer">
                     <div id="moodMap" style="height: 480px;"></div>

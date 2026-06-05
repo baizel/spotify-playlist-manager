@@ -1,5 +1,17 @@
 // ── Visuals tab: mood map, radar, histograms, selection, discovery ──────────
 
+const SCATTER_AXES = [
+    { label: 'Energy',           key: 'energy',           range: [-0.05, 1.05] },
+    { label: 'Positiveness',     key: 'valence',          range: [-0.05, 1.05] },
+    { label: 'Danceability',     key: 'danceability',     range: [-0.05, 1.05] },
+    { label: 'BPM',              key: 'tempo',            range: [55, 210] },
+    { label: 'Acousticness',     key: 'acousticness',     range: [-0.05, 1.05] },
+    { label: 'Instrumentalness', key: 'instrumentalness', range: [-0.05, 1.05] },
+    { label: 'Liveness',         key: 'liveness',         range: [-0.05, 1.05] },
+    { label: 'Speechiness',      key: 'speechiness',      range: [-0.05, 1.05] },
+    { label: 'Loudness',         key: 'loudness',         range: [-65, 5] },
+];
+
 const GENRE_COLORS = [
     '#1DB954','#E91E63','#3F51B5','#FF9800','#00BCD4',
     '#9C27B0','#F44336','#4CAF50','#FF5722','#607D8B',
@@ -27,6 +39,25 @@ const HISTOGRAM_FEATURES = [
 
 let currentSelection = [];
 let radarChartInstance = null;
+let visualsSearchIds = [];
+let _searchDebounce = null;
+
+function getAxisKey(selectId, fallback) {
+    const el = document.getElementById(selectId);
+    return (el && el.value) || fallback;
+}
+
+function onVisualsSearch(query) {
+    clearTimeout(_searchDebounce);
+    _searchDebounce = setTimeout(() => {
+        const q = query.trim().toLowerCase();
+        const data = getVisualsData() || [];
+        visualsSearchIds = q.length >= 2
+            ? data.filter(s => s.Song.toLowerCase().includes(q) || s.Artist.toLowerCase().includes(q)).map(s => s.id)
+            : [];
+        drawMoodMap(data);
+    }, 250);
+}
 
 // ── Entry point called from manager.js after data/features update ─────────
 
@@ -40,12 +71,19 @@ function refreshVisuals() {
 
 function getVisualsData() {
     if (typeof storedData === 'undefined' || !storedData || !storedData.data) return null;
-    return storedData.data.filter(s => typeof s.energy === 'number' && typeof s.valence === 'number');
+    const xKey = getAxisKey('scatterXAxis', 'energy');
+    const yKey = getAxisKey('scatterYAxis', 'valence');
+    return storedData.data.filter(s => typeof s[xKey] === 'number' && typeof s[yKey] === 'number');
 }
 
 // ── T6: Scatter plot ──────────────────────────────────────────────────────
 
 function drawMoodMap(data) {
+    const xKey = getAxisKey('scatterXAxis', 'energy');
+    const yKey = getAxisKey('scatterYAxis', 'valence');
+    const xCfg = SCATTER_AXES.find(a => a.key === xKey) || SCATTER_AXES[0];
+    const yCfg = SCATTER_AXES.find(a => a.key === yKey) || SCATTER_AXES[1];
+
     const genreGroups = {};
     data.forEach(song => {
         const g = song.topGenre || 'Unknown';
@@ -57,14 +95,13 @@ function drawMoodMap(data) {
     const traces = genres.map((genre, i) => {
         const songs = genreGroups[genre];
         return {
-            x: songs.map(s => s.energy),
-            y: songs.map(s => s.valence),
+            x: songs.map(s => s[xKey]),
+            y: songs.map(s => s[yKey]),
             customdata: songs.map(s => s.id),
             text: songs.map(s =>
                 `<b>${escapeHtml(s.Song)}</b><br>${escapeHtml(s.Artist)}<br>` +
                 `Genre: ${escapeHtml(genre)}<br>` +
-                `Energy: ${(s.energy || 0).toFixed(2)}  Mood: ${(s.valence || 0).toFixed(2)}<br>` +
-                `Danceability: ${(s.danceability || 0).toFixed(2)}`
+                `${xCfg.label}: ${((s[xKey]) || 0).toFixed(2)}  ${yCfg.label}: ${((s[yKey]) || 0).toFixed(2)}`
             ),
             hovertemplate: '%{text}<extra></extra>',
             mode: 'markers',
@@ -79,23 +116,37 @@ function drawMoodMap(data) {
         };
     });
 
+    if (visualsSearchIds.length) {
+        const matched = data.filter(s => visualsSearchIds.includes(s.id));
+        if (matched.length) {
+            traces.push({
+                x: matched.map(s => s[xKey]),
+                y: matched.map(s => s[yKey]),
+                customdata: matched.map(s => s.id),
+                text: matched.map(s => `<b>${escapeHtml(s.Song)}</b><br>${escapeHtml(s.Artist)}`),
+                hovertemplate: '%{text}<extra></extra>',
+                mode: 'markers',
+                type: 'scatter',
+                name: 'Search match',
+                marker: { symbol: 'star', size: 14, color: '#FFD700', opacity: 1, line: { width: 1, color: '#555' } }
+            });
+        }
+    }
+
+    const xMid = (xCfg.range[0] + xCfg.range[1]) / 2;
+    const yMid = (yCfg.range[0] + yCfg.range[1]) / 2;
+
     const layout = {
         dragmode: 'lasso',
-        xaxis: { title: 'Energy  (calm → intense)', range: [-0.05, 1.05], zeroline: false, gridcolor: '#eee' },
-        yaxis: { title: 'Positiveness  (dark → happy)', range: [-0.05, 1.05], zeroline: false, gridcolor: '#eee' },
+        xaxis: { title: xCfg.label, range: xCfg.range, zeroline: false, gridcolor: '#eee' },
+        yaxis: { title: yCfg.label, range: yCfg.range, zeroline: false, gridcolor: '#eee' },
         paper_bgcolor: '#fafafa',
         plot_bgcolor: '#fafafa',
         margin: { t: 30, r: 10, b: 80, l: 60 },
         legend: { orientation: 'h', y: -0.25, font: { size: 11 } },
-        annotations: [
-            { x: 0.78, y: 0.96, xref: 'x', yref: 'y', text: 'Energetic & Happy', showarrow: false, font: { color: '#ccc', size: 11 } },
-            { x: 0.78, y: 0.04, xref: 'x', yref: 'y', text: 'Intense & Dark',    showarrow: false, font: { color: '#ccc', size: 11 } },
-            { x: 0.22, y: 0.96, xref: 'x', yref: 'y', text: 'Calm & Happy',      showarrow: false, font: { color: '#ccc', size: 11 } },
-            { x: 0.22, y: 0.04, xref: 'x', yref: 'y', text: 'Calm & Dark',       showarrow: false, font: { color: '#ccc', size: 11 } },
-        ],
         shapes: [
-            { type: 'line', x0: 0.5, x1: 0.5, y0: 0, y1: 1, line: { color: '#ddd', width: 1, dash: 'dot' } },
-            { type: 'line', x0: 0, x1: 1,   y0: 0.5, y1: 0.5, line: { color: '#ddd', width: 1, dash: 'dot' } },
+            { type: 'line', x0: xMid, x1: xMid, y0: yCfg.range[0], y1: yCfg.range[1], line: { color: '#ddd', width: 1, dash: 'dot' } },
+            { type: 'line', x0: xCfg.range[0], x1: xCfg.range[1], y0: yMid, y1: yMid, line: { color: '#ddd', width: 1, dash: 'dot' } },
         ]
     };
 

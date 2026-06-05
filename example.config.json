@@ -2,7 +2,7 @@
   "SP_REDIRECT_URI": "https://www.yourdomain.com/callback",
   "SP_CLIENT_ID": "id",
   "SP_CLIENT_SECRET": "key",
-  "SP_SCOPE": "playlist-modify-private playlist-read-private playlist-modify-public user-top-read user-read-recently-played user-follow-read user-library-modify",
+  "SP_SCOPE": "user-library-read playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private user-read-playback-state user-modify-playback-state streaming user-read-email user-read-private",
   "CACHE_TYPE": "simple",
   "SESSION_TYPE": "filesystem",
   "SECRET_KEY": "super secret key"

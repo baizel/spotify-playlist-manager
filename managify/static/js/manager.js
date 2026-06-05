@@ -18,10 +18,37 @@ let genreFilters = [];
 document.addEventListener('DOMContentLoaded', function () {
     initTableHTML = document.getElementById(SONG_TABLE_CONTAINER_ID).innerHTML;
     const modalElem = document.querySelectorAll('.modal');
-    const modalInstance = M.Modal.init(modalElem, {onCloseEnd: handleFilterChange});
+    const modalInstance = M.Modal.init(modalElem, { onCloseEnd: handleFilterChange });
+    M.Tabs.init(document.querySelector('.tabs'), {
+        onShow: function (tabContent) {
+            if (tabContent.id === 'test2') onVisualsTabActivated();
+        }
+    });
     setEditModeCheckbox();
     updateFilterOptions();
+    initPlaylistSearch();
 });
+
+function onVisualsTabActivated() {
+    const hasData = storedData && storedData.data && storedData.data.length > 0;
+    document.getElementById('visuals-empty').style.display = hasData ? 'none' : 'flex';
+    document.getElementById('visuals-content').style.display = hasData ? 'block' : 'none';
+    if (hasData && typeof refreshVisuals === 'function') refreshVisuals();
+}
+
+function initPlaylistSearch() {
+    $('#autocomplete-input').on('keyup', function () {
+        const searchTerm = this.value.toLowerCase();
+        $('.playlist-content').each(function () {
+            const playlistName = $(this).find('p').text().toLowerCase();
+            if (playlistName.includes(searchTerm)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+}
 
 function setEditModeCheckbox() {
     document.getElementById('isEditMode').checked = isEditMode;
@@ -93,7 +120,7 @@ function updateFilterOptions() {
         visible: true
     }];
     checkboxes.forEach(el => {
-        filterOptions.push({title: el.value, data: el.id, visible: true});
+        filterOptions.push({ title: el.value, data: el.id, visible: true });
     })
 }
 
@@ -106,7 +133,7 @@ async function handleFilterChange() {
 }
 
 async function toggleAndUpdateTable(id, name, isReadOnly) {
-    toggleToList({id, name, isReadOnly});
+    toggleToList({ id, name, isReadOnly });
     toggleNoDataContent()
     updateTable().then(() => {
         if (!(Boolean(storedData.data) && Boolean(storedData.data.length))) {
@@ -143,10 +170,10 @@ async function updateTable(forceUseLastFetchedData) {
             storedData = await getPlaylistTracks(chosenPlaylists, "default");
             cachedDataResult = deepCopyHack(storedData);
         }
-        allGeneresInCurrentStage = buildGenres(); // BuildGeneres mutates storedData atm :/ TODO: change this
+        // Draw table immediately with whatever data we have (no features yet)
         nonFilteredValue = deepCopyHack(storedData);
         showFilterByGenreOptions();
-        applyGenreFilter()
+        applyGenreFilter();
         drawTable(() => {
             initSearchBar();
             setEditModeCheckbox();
@@ -154,7 +181,63 @@ async function updateTable(forceUseLastFetchedData) {
             hideFilterColumns();
             resolve();
         });
+        // Load features and artist data async — fills in feature columns + genres after table is visible
+        loadSecondaryDataAsync();
     });
+}
+
+async function loadSecondaryDataAsync() {
+    if (!storedData || !storedData.data || !storedData.data.length) return;
+
+    const trackIds = storedData.data.map(s => s.id);
+    const artistIds = [...new Set(storedData.data.flatMap(s => (s.artists || []).map(a => a.id)))];
+
+    // Fetch features (with localStorage cache) and artist data in parallel
+    const [featureMap, artistMap] = await Promise.all([
+        fetchAndCacheFeatures(trackIds),
+        artistIds.length ? fetchArtists(artistIds) : Promise.resolve({})
+    ]);
+
+    // Merge features into track data
+    storedData.data.forEach(song => {
+        const f = featureMap[song.id];
+        if (f) Object.assign(song, f);
+    });
+
+    // Merge artist data and rebuild genres
+    if (Object.keys(artistMap).length) {
+        storedData.artists = artistMap;
+        allGeneresInCurrentStage = buildGenres();
+        nonFilteredValue = deepCopyHack(storedData);
+        showFilterByGenreOptions();
+        applyGenreFilter();
+    }
+
+    cachedDataResult = deepCopyHack(storedData);
+
+    // Refresh table rows in-place to show feature values
+    const table = getTableData();
+    if (table) {
+        table.rows().invalidate().draw(false);
+        hideFilterColumns();
+    }
+
+    // Notify visuals tab if it's active
+    if (typeof refreshVisuals === 'function') refreshVisuals();
+}
+
+async function fetchArtists(artistIds) {
+    try {
+        const resp = await fetch('/api/sp/artists', {
+            method: 'POST',
+            body: JSON.stringify(artistIds)
+        });
+        if (!resp.ok) return {};
+        return await resp.json();
+    } catch (e) {
+        console.warn('Artist fetch failed', e);
+        return {};
+    }
 }
 
 function applyGenreFilter() {
@@ -171,7 +254,9 @@ function buildGenres() {
         let songGenres = {}
         songInfo.artists.forEach(artist => {
             let artistId = artist.id
-            storedData.artists[artistId].genres.forEach((genre => {
+            const artistData = storedData.artists[artistId];
+            if (!artistData) return; // artist not yet loaded (fast path)
+            artistData.genres.forEach((genre => {
                 allGenreCount[genre] = allGenreCount[genre] !== undefined ? allGenreCount[genre] + 1 : 1;
                 songGenres[genre] = songGenres[genre] !== undefined ? songGenres[genre] + 1 : 1;
             }))
@@ -198,11 +283,13 @@ function drawTable(onDraw) {
         // "dom": 'Blfrtir',
         "ordering": true,
         "order": [],
-        "paging": false,
+        "paging": true,
+        "pageLength": 50,
+        "lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
         "createdRow": function (row, data, index) {
             const imageUrl = getImageUrl(data).url;
             const songName = data.Song;
-            formatSongColumn(row, 0, {imageUrl, songName});
+            formatSongColumn(row, 0, { imageUrl, songName });
             for (let i = SKIPPED_COLUMNS; i < storedData.columns.length - filterOptions.length; i++) {
                 let payload = {
                     songId: data.id,
@@ -252,7 +339,7 @@ function deleteTableFromDOM() {
     }
 }
 
-function formatSongColumn(row, columnIndex, {imageUrl, songName}) {
+function formatSongColumn(row, columnIndex, { imageUrl, songName }) {
     const imgHTML = `<div class="valign-wrapper">
                         <img src="${imageUrl}" alt="album art" class="circle" height="32">
                         <span class="song-name">${songName}</span>
@@ -285,20 +372,20 @@ function formatCheckboxColumns(row, columnIndex, payload, isChecked) {
 function handleCheckbox(target, payload) {
     payload["isAdd"] = target.checked
     console.log(JSON.stringify(payload))
-    fetch("/api/sp/editPlaylist", {method: 'post', body: JSON.stringify(payload)})
+    fetch("/api/sp/editPlaylist", { method: 'post', body: JSON.stringify(payload) })
         .then((response) => {
             return response.json()
         }).catch(reason => {
-        target.checked = !target.checked;
-        toast(`Failed getting editing playlist - ${reason}. Try again! `)
-    });
+            target.checked = !target.checked;
+            toast(`Failed getting editing playlist - ${reason}. Try again! `)
+        });
 }
 
 async function getPlaylistTracks(playlists, cachePolicy) {
     const cache = cachePolicy ? cachePolicy : "default";
     numberOfRequests++;
     handleSpinnerState();
-    return fetch(`api/sp/playlist`, {method: 'post', body: JSON.stringify(playlists), cache: cache})
+    return fetch(`api/sp/playlist/fast`, { method: 'post', body: JSON.stringify(playlists), cache: cache })
         .then((response) => {
             return response.json()
         }).finally((() => {
@@ -359,11 +446,11 @@ function handleSpinnerState() {
 }
 
 function getAppliedData(table) {
-    return table.rows({order: 'applied'}).data().toArray();
+    return table.rows({ order: 'applied' }).data().toArray();
 }
 
 function getIndexedData(table) {
-    return table.rows({order: 'index'}).data().toArray();
+    return table.rows({ order: 'index' }).data().toArray();
 }
 
 function getPageHeight() {
@@ -445,5 +532,5 @@ function receiver(key, value) {
 }
 
 function toast(mssg) {
-    M.toast({html: mssg})
+    M.toast({ html: mssg })
 }

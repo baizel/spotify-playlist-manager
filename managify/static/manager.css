@@ -1,5 +1,6 @@
-
-header, main, footer {
+header,
+main,
+footer {
     padding-left: 300px;
 }
 
@@ -7,13 +8,39 @@ header, main, footer {
     padding-top: 30px;
 }
 
+#test2 {
+    padding-top: 8px;
+}
+
+#moodMapContainer {
+    background: #fafafa;
+    border-radius: 8px;
+}
+
+#selectionPanel {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: #fff;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+#discoveryPanel {
+    padding: 0 8px;
+}
+
 @media only screen and (max-width: 992px) {
-    header, main, footer {
+
+    header,
+    main,
+    footer {
         padding-left: 0;
     }
 }
 
-.sidenav li > a {
+.sidenav li>a {
     overflow: hidden;
 }
 
@@ -62,9 +89,11 @@ header, main, footer {
 .rowClick {
     background-color: #ffebee !important;
 }
+
 .chipClick {
     background-color: #ef9a9a !important;
 }
+
 .player {
     padding-top: 5px;
     padding-bottom: 5px;

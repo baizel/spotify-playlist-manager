@@ -440,11 +440,13 @@ function drawParallelCoords(data) {
 
     Plotly.react('parallelCoordsChart', [{
         type: 'parcoords',
+        labelfont: { size: 13, color: '#333' },
+        tickfont:  { size: 10, color: '#666' },
         line: { color: colorVals, colorscale: 'Viridis', showscale: true,
                 colorbar: { title: { text: 'Energy', font: { size: 11 } }, thickness: 12, len: 0.6 } },
         dimensions,
     }], {
-        margin: { t: 30, r: 80, b: 30, l: 80 },
+        margin: { t: 80, r: 80, b: 30, l: 60 },
         paper_bgcolor: '#fafafa',
     }, { responsive: true, displayModeBar: false });
 

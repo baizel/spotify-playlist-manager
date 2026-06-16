@@ -444,7 +444,7 @@ function drawParallelCoords(data) {
                 colorbar: { title: { text: 'Energy', font: { size: 11 } }, thickness: 12, len: 0.6 } },
         dimensions,
     }], {
-        margin: { t: 80, r: 80, b: 30, l: 60 },
+        margin: { t: 80, r: 60, b: 20, l: 20 },
         paper_bgcolor: '#fafafa',
     }, { responsive: true, displayModeBar: false });
 

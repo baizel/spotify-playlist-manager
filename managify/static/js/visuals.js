@@ -317,7 +317,12 @@ function showCreatePlaylistForm() {
                    style="border:1px solid #ccc; border-radius:4px; padding:4px 8px; font-size:12px; flex:1; height:28px;">
             <button class="btn btn-small waves-effect" style="background:#1DB954; height:28px; line-height:28px; padding:0 10px; font-size:11px"
                     onclick="doCreatePlaylist()">Create</button>
-        </div>`;
+        </div>
+        <label style="display:flex; align-items:center; gap:6px; margin-top:8px; cursor:pointer; font-size:11px; color:#555;">
+            <input type="checkbox" id="camelotOrder"
+                   style="width:14px; height:14px; margin:0; cursor:pointer;">
+            <span>Order by Camelot wheel <span style="color:#aaa;">(keys blend naturally)</span></span>
+        </label>`;
     panel.appendChild(form);
     document.getElementById('newPlaylistName').focus();
 }
@@ -327,9 +332,13 @@ async function doCreatePlaylist() {
     const name = nameInput ? nameInput.value.trim() : '';
     if (!name) { M.toast({ html: 'Enter a playlist name' }); return; }
 
-    const trackIds = currentSelection.length
+    let trackIds = currentSelection.length
         ? currentSelection
         : (storedData.data || []).map(s => s.id);
+
+    if (document.getElementById('camelotOrder')?.checked) {
+        trackIds = camelotChain(trackIds);
+    }
 
     try {
         const resp = await fetch('/api/sp/createPlaylist', {
@@ -346,6 +355,52 @@ async function doCreatePlaylist() {
     } catch (e) {
         M.toast({ html: 'Failed to create playlist' });
     }
+}
+
+function camelotChain(trackIds) {
+    const byId = {};
+    (storedData.data || []).forEach(s => { byId[s.id] = s; });
+
+    const withKey = trackIds.filter(id => byId[id] && typeof byId[id].key === 'number');
+    const noKey   = trackIds.filter(id => !withKey.includes(id));
+    if (withKey.length <= 1) return [...withKey, ...noKey];
+
+    const remaining = new Set(withKey);
+    const chain = [withKey[0]];
+    remaining.delete(withKey[0]);
+
+    while (remaining.size > 0) {
+        const cur = byId[chain[chain.length - 1]];
+        const curCid = typeof _songCamelot === 'function' ? _songCamelot(cur) : null;
+        let best = null, bestScore = Infinity;
+        for (const id of remaining) {
+            const score = _camelotCompatScore(curCid, cur, byId[id]);
+            if (score < bestScore) { bestScore = score; best = id; }
+        }
+        chain.push(best);
+        remaining.delete(best);
+    }
+
+    return [...chain, ...noKey];
+}
+
+function _camelotCompatScore(curCid, s1, s2) {
+    const cid2 = typeof _songCamelot === 'function' ? _songCamelot(s2) : null;
+    let keyScore;
+    if (!curCid || !cid2) {
+        keyScore = 20;
+    } else if (curCid === cid2) {
+        keyScore = 0;
+    } else {
+        const c1 = CAMELOT_REV[curCid], c2 = CAMELOT_REV[cid2];
+        const dist = Math.min(Math.abs(c1.n - c2.n), 12 - Math.abs(c1.n - c2.n));
+        const sameRing = c1.r === c2.r;
+        if (dist === 1 && sameRing) keyScore = 1;       // ±1 same ring: smooth
+        else if (dist === 0) keyScore = 2;              // same number, other ring: energy shift
+        else keyScore = 3 + dist;
+    }
+    const energyDiff = Math.abs((s1.energy || 0.5) - (s2.energy || 0.5));
+    return keyScore * 10 + energyDiff;
 }
 
 // ── Utility ────────────────────────────────────────────────────────────────

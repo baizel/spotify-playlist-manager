@@ -458,6 +458,7 @@ function drawParallelCoords(data) {
         const trace = el._fullData && el._fullData[0];
         if (!trace) return;
         const dims = trace.dimensions;
+        const anyBrush = dims.some(dim => dim.constraintrange && dim.constraintrange.length);
         const selected = songs.filter((_, i) =>
             dims.every(dim => {
                 const cr = dim.constraintrange;
@@ -470,7 +471,10 @@ function drawParallelCoords(data) {
         );
         currentSelection = selected.map(s => s.id);
         updateSelectionPanel(currentSelection);
-        drawRadarChart(getVisualsData(), currentSelection);
+        // Redraw scatter and radar with the brushed subset (or full data if nothing brushed)
+        const scatterData = anyBrush ? selected : getVisualsData();
+        drawMoodMap(scatterData.length ? scatterData : getVisualsData());
+        drawRadarChart(scatterData, currentSelection);
     });
 }
 

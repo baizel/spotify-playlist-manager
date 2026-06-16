@@ -67,6 +67,8 @@ function refreshVisuals() {
     drawMoodMap(data);
     drawRadarChart(data, currentSelection);
     drawHistograms(data);
+    drawParallelCoords(storedData.data);
+    drawBpmKeyHeatmap(storedData.data);
 }
 
 function getVisualsData() {
@@ -401,6 +403,137 @@ function _camelotCompatScore(curCid, s1, s2) {
     }
     const energyDiff = Math.abs((s1.energy || 0.5) - (s2.energy || 0.5));
     return keyScore * 10 + energyDiff;
+}
+
+// ── Parallel Coordinates ──────────────────────────────────────────────────
+
+const PARCOORDS_DIMS = [
+    { label: 'Energy',           key: 'energy',           range: [0, 1],    norm: v => v },
+    { label: 'Positiveness',     key: 'valence',          range: [0, 1],    norm: v => v },
+    { label: 'Danceability',     key: 'danceability',     range: [0, 1],    norm: v => v },
+    { label: 'Acousticness',     key: 'acousticness',     range: [0, 1],    norm: v => v },
+    { label: 'Instrumentalness', key: 'instrumentalness', range: [0, 1],    norm: v => v },
+    { label: 'Speechiness',      key: 'speechiness',      range: [0, 1],    norm: v => v },
+    { label: 'BPM',              key: 'tempo',            range: [0, 1],    norm: v => Math.min(v / 210, 1) },
+    { label: 'Loudness',         key: 'loudness',         range: [0, 1],    norm: v => Math.max((v + 65) / 70, 0) },
+];
+
+let _parEl = null;
+
+function drawParallelCoords(data) {
+    const songs = (data || []).filter(s => typeof s.energy === 'number');
+    if (!songs.length) return;
+
+    const dimensions = PARCOORDS_DIMS.map(d => ({
+        label: d.label,
+        range: [0, 1],
+        values: songs.map(s => typeof s[d.key] === 'number' ? d.norm(s[d.key]) : null),
+        tickvals: [0, 0.25, 0.5, 0.75, 1],
+        ticktext: d.key === 'tempo'
+            ? ['0', '53', '105', '158', '210']
+            : d.key === 'loudness'
+            ? ['-65', '-49', '-33', '-16', '0']
+            : ['0', '.25', '.5', '.75', '1'],
+    }));
+
+    const colorVals = songs.map(s => s.energy || 0);
+
+    Plotly.react('parallelCoordsChart', [{
+        type: 'parcoords',
+        line: { color: colorVals, colorscale: 'Viridis', showscale: true,
+                colorbar: { title: { text: 'Energy', font: { size: 11 } }, thickness: 12, len: 0.6 } },
+        dimensions,
+    }], {
+        margin: { t: 30, r: 80, b: 30, l: 80 },
+        paper_bgcolor: '#fafafa',
+    }, { responsive: true, displayModeBar: false });
+
+    const el = document.getElementById('parallelCoordsChart');
+    if (el === _parEl) return; // listener already attached
+    _parEl = el;
+
+    el.on('plotly_restyle', () => {
+        const trace = el._fullData && el._fullData[0];
+        if (!trace) return;
+        const dims = trace.dimensions;
+        const selected = songs.filter((_, i) =>
+            dims.every(dim => {
+                const cr = dim.constraintrange;
+                if (!cr || !cr.length) return true;
+                const val = dim.values[i];
+                if (val === null) return false;
+                const ranges = Array.isArray(cr[0]) ? cr : [cr];
+                return ranges.some(([lo, hi]) => val >= lo && val <= hi);
+            })
+        );
+        currentSelection = selected.map(s => s.id);
+        updateSelectionPanel(currentSelection);
+        drawRadarChart(getVisualsData(), currentSelection);
+    });
+}
+
+// ── BPM × Key Heatmap ────────────────────────────────────────────────────
+
+const BPM_LABELS  = ['<70','70–80','80–90','90–100','100–110','110–120','120–130','130–140','140–150','150–160','160+'];
+const CAM_LABELS  = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B',
+                     '7A','7B','8A','8B','9A','9B','10A','10B','11A','11B','12A','12B'];
+
+let _heatSongIds = [];  // [bpmRow][camCol] = [id, ...]
+
+function _bpmBucket(tempo) {
+    if (!tempo || tempo < 70) return 0;
+    if (tempo >= 160) return 10;
+    return Math.floor((tempo - 70) / 10) + 1;
+}
+
+function drawBpmKeyHeatmap(data) {
+    const songs = (data || []).filter(s => typeof s.key === 'number' && typeof s.tempo === 'number');
+    if (!songs.length) return;
+
+    const nRows = BPM_LABELS.length, nCols = CAM_LABELS.length;
+    const z = Array.from({ length: nRows }, () => new Array(nCols).fill(0));
+    _heatSongIds = Array.from({ length: nRows }, () => Array.from({ length: nCols }, () => []));
+
+    songs.forEach(s => {
+        const cid = typeof _songCamelot === 'function' ? _songCamelot(s) : null;
+        if (!cid) return;
+        const col = CAM_LABELS.indexOf(cid);
+        if (col === -1) return;
+        const row = _bpmBucket(s.tempo);
+        z[row][col]++;
+        _heatSongIds[row][col].push(s.id);
+    });
+
+    Plotly.react('bpmKeyHeatmap', [{
+        type: 'heatmap',
+        z,
+        x: CAM_LABELS,
+        y: BPM_LABELS,
+        colorscale: 'YlGn',
+        hoverongaps: false,
+        hovertemplate: '%{y}  %{x}<br>%{z} songs<extra></extra>',
+        showscale: true,
+        colorbar: { thickness: 12, len: 0.8, title: { text: 'Songs', font: { size: 11 } } },
+    }], {
+        margin: { t: 20, r: 80, b: 60, l: 60 },
+        paper_bgcolor: '#fafafa',
+        plot_bgcolor: '#fafafa',
+        xaxis: { title: 'Camelot key', tickfont: { size: 10 } },
+        yaxis: { title: 'BPM range', tickfont: { size: 10 } },
+    }, { responsive: true, displayModeBar: false });
+
+    const el = document.getElementById('bpmKeyHeatmap');
+    el.removeAllListeners && el.removeAllListeners('plotly_click');
+    el.on('plotly_click', evt => {
+        if (!evt || !evt.points.length) return;
+        const pt = evt.points[0];
+        const row = BPM_LABELS.indexOf(pt.y);
+        const col = CAM_LABELS.indexOf(pt.x);
+        if (row === -1 || col === -1) return;
+        currentSelection = [...(_heatSongIds[row][col] || [])];
+        updateSelectionPanel(currentSelection);
+        drawRadarChart(getVisualsData(), currentSelection);
+    });
 }
 
 // ── Utility ────────────────────────────────────────────────────────────────

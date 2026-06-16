@@ -418,8 +418,6 @@ const PARCOORDS_DIMS = [
     { label: 'Loudness',         key: 'loudness',         range: [0, 1],    norm: v => Math.max((v + 65) / 70, 0) },
 ];
 
-let _parEl = null;
-
 function drawParallelCoords(data) {
     const songs = (data || []).filter(s => typeof s.energy === 'number');
     if (!songs.length) return;
@@ -451,8 +449,7 @@ function drawParallelCoords(data) {
     }, { responsive: true, displayModeBar: false });
 
     const el = document.getElementById('parallelCoordsChart');
-    if (el === _parEl) return; // listener already attached
-    _parEl = el;
+    el.removeAllListeners && el.removeAllListeners('plotly_restyle');
 
     el.on('plotly_restyle', () => {
         const trace = el._fullData && el._fullData[0];

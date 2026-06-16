@@ -509,7 +509,7 @@ function drawBpmKeyHeatmap(data) {
         z,
         x: CAM_LABELS,
         y: BPM_LABELS,
-        colorscale: 'YlGn',
+        colorscale: [[0,'#f7fbff'],[0.25,'#bdd7e7'],[0.5,'#6baed6'],[0.75,'#2171b5'],[1,'#084594']],
         hoverongaps: false,
         hovertemplate: '%{y}  %{x}<br>%{z} songs<extra></extra>',
         showscale: true,

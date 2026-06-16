@@ -14,8 +14,12 @@
             <ul class="collapsible">
                 <li>
                     <div class="collapsible-header"><i class="material-icons">add</i>Add Other Playlists</div>
-                    <div class="collapsible-body center-align">
-                        <span>Add playlist by Id coming soon</span>
+                    <div class="collapsible-body">
+                        <div class="input-field" style="padding: 0 16px;">
+                            <i class="material-icons prefix">search</i>
+                            <input type="text" id="playlist-search-input" placeholder="Search Spotify...">
+                        </div>
+                        <ul id="playlist-search-results"></ul>
                     </div>
                 </li>
                 <li class="active">
@@ -23,7 +27,7 @@
                     <div class="collapsible-body">
                         <ul>
                             {% for playlist in data %}
-                                <li class="playlist-content"
+                                <li class="playlist-content local-playlist"
                                     onclick="toggleAndUpdateTable('{{ playlist.id }}','{{ playlist.name }}', '{{ playlist.isReadOnly }}')">
                                     <div id="{{ playlist.id }}" class="collection-item avatar valign-wrapper">
                                         <img src="{{ playlist.image.url }}" alt="" class="circle">

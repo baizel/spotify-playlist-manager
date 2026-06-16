@@ -204,39 +204,6 @@ def getArtistsByIds(session, artistIds):
     return result
 
 
-def getRecommendations(session, data):
-    config = current_app.config
-    tokenInfo, _ = getTokenInfo(session, config)
-    accessToken = tokenInfo.get('access_token')
-    sp = spotipy.Spotify(auth=accessToken)
-
-    seed_ids = data.get('seedTrackIds', [])[:5]
-    if not seed_ids:
-        return {"error": "No seed tracks provided"}, 400
-
-    target_features = data.get('targetFeatures', {})
-    allowed_targets = ('energy', 'valence', 'danceability', 'tempo',
-                       'instrumentalness', 'acousticness', 'speechiness')
-    target_kwargs = {f"target_{k}": v for k, v in target_features.items()
-                     if k in allowed_targets}
-
-    limit = min(data.get('limit', 20), 100)
-    result = sp.recommendations(seed_tracks=seed_ids, limit=limit, **target_kwargs)
-
-    tracks = result.get('tracks', [])
-    return [{
-        'id': t['id'],
-        'uri': t['uri'],
-        'name': t['name'],
-        'Song': t['name'],
-        'Artist': ', '.join(a['name'] for a in t['artists']),
-        'artists': t['artists'],
-        'albumArt': t['album']['images'][0]['url'] if t['album']['images'] else '/static/music-placeholder.png',
-        'preview_url': t['preview_url'],
-        'spotifyUrl': t['external_urls'].get('spotify', ''),
-        'duration_ms': t['duration_ms'],
-    } for t in tracks]
-
 
 def createPlaylist(session, data):
     config = current_app.config
@@ -273,3 +240,47 @@ def getAllPlaylistInfos(accessToken):
         else:
             playlists = None
     return res
+
+
+def getCurrentlyPlaying(session):
+    config = current_app.config
+    tokenInfo, _ = getTokenInfo(session, config)
+    accessToken = tokenInfo.get('access_token')
+    sp = spotipy.Spotify(auth=accessToken)
+    playback = sp.current_playback()
+    if not playback or not playback.get('item'):
+        return None
+    item = playback['item']
+    images = item.get('album', {}).get('images') or []
+    return {
+        'id': item['id'],
+        'name': item['name'],
+        'uri': item['uri'],
+        'artists': [{'id': a['id'], 'name': a['name']} for a in item.get('artists', [])],
+        'album': {'name': item.get('album', {}).get('name', ''), 'images': images},
+        'progress_ms': playback.get('progress_ms', 0),
+        'duration_ms': item.get('duration_ms', 0),
+        'is_playing': playback.get('is_playing', False),
+    }
+
+
+def searchPlaylists(session, query):
+    config = current_app.config
+    tokenInfo, _ = getTokenInfo(session, config)
+    accessToken = tokenInfo.get('access_token')
+    sp = spotipy.Spotify(auth=accessToken)
+    results = sp.search(q=query, type='playlist', limit=10)
+    playlists = results.get('playlists', {}).get('items', [])
+    output = []
+    for pl in playlists:
+        if pl is None:
+            continue
+        images = pl.get('images') or []
+        image_url = images[0]['url'] if images else ''
+        output.append({
+            'id': pl['id'],
+            'name': stripChars(pl['name']),
+            'image': {'url': image_url},
+            'isReadOnly': True
+        })
+    return output

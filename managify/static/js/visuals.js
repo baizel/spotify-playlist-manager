@@ -294,10 +294,6 @@ function updateSelectionPanel(selectedIds) {
             <div style="max-height:180px; overflow-y:auto; margin:6px 0; border-top:1px solid #eee; padding-top:4px">
                 ${listHTML}${more}
             </div>
-            <button class="btn btn-small waves-effect waves-light" onclick="onDiscoverSimilar()"
-                    style="background:#1DB954; margin-right:6px; margin-bottom:6px; font-size:11px">
-                <i class="material-icons left" style="font-size:14px">explore</i>Discover
-            </button>
             <button class="btn btn-small waves-effect grey lighten-1" onclick="showCreatePlaylistForm()"
                     style="font-size:11px">
                 <i class="material-icons left" style="font-size:14px">playlist_add</i>Save
@@ -349,121 +345,6 @@ async function doCreatePlaylist() {
         }
     } catch (e) {
         M.toast({ html: 'Failed to create playlist' });
-    }
-}
-
-// ── T10: Discovery panel ───────────────────────────────────────────────────
-
-function pickSeeds(songs, n = 5) {
-    if (songs.length <= n) return songs.map(s => s.id);
-    const keys = ['energy', 'valence', 'danceability', 'tempo'];
-    const centroid = {};
-    keys.forEach(k => {
-        const vals = songs.map(s => s[k] || 0);
-        centroid[k] = vals.reduce((a, b) => a + b, 0) / vals.length;
-    });
-    const scored = songs.map(s => {
-        const dist = keys.reduce((sum, k) => {
-            const norm = k === 'tempo' ? 200 : 1;
-            return sum + Math.pow(((s[k] || 0) - centroid[k]) / norm, 2);
-        }, 0);
-        return { id: s.id, dist };
-    });
-    scored.sort((a, b) => a.dist - b.dist);
-    return scored.slice(0, n).map(s => s.id);
-}
-
-async function onDiscoverSimilar() {
-    const selectedSongs = (storedData.data || []).filter(s => currentSelection.includes(s.id));
-    if (!selectedSongs.length) { M.toast({ html: 'Select some songs first' }); return; }
-
-    const seedIds = pickSeeds(selectedSongs);
-    const avgFeats = {};
-    ['energy', 'valence', 'danceability', 'tempo'].forEach(k => {
-        const vals = selectedSongs.map(s => s[k]).filter(v => typeof v === 'number');
-        if (vals.length) avgFeats[k] = vals.reduce((a, b) => a + b, 0) / vals.length;
-    });
-
-    const panel = document.getElementById('discoveryPanel');
-    panel.innerHTML = `
-        <div class="center-align" style="padding:24px">
-            <div class="preloader-wrapper small active">
-                <div class="spinner-layer spinner-green-only">
-                    <div class="circle-clipper left"><div class="circle"></div></div>
-                    <div class="gap-patch"><div class="circle"></div></div>
-                    <div class="circle-clipper right"><div class="circle"></div></div>
-                </div>
-            </div>
-            <p class="grey-text" style="margin-top:8px">Finding similar songs…</p>
-        </div>`;
-
-    try {
-        const resp = await fetch('/api/sp/discover', {
-            method: 'POST',
-            body: JSON.stringify({ seedTrackIds: seedIds, targetFeatures: avgFeats, limit: 20 })
-        });
-        if (!resp.ok) throw new Error(resp.statusText);
-        const results = await resp.json();
-        renderDiscoveryResults(results, selectedSongs.length);
-    } catch (e) {
-        panel.innerHTML = `<p class="red-text" style="padding:16px">Failed to get recommendations. ${e.message}</p>`;
-    }
-}
-
-function renderDiscoveryResults(tracks, seedCount) {
-    const loadedIds = new Set((storedData.data || []).map(s => s.id));
-    const panel = document.getElementById('discoveryPanel');
-
-    if (!tracks.length) {
-        panel.innerHTML = '<p class="grey-text" style="padding:16px">No recommendations found for this selection.</p>';
-        return;
-    }
-
-    const cards = tracks.map(t => {
-        const inLibrary = loadedIds.has(t.id);
-        const badge = inLibrary
-            ? '<span style="font-size:10px; background:#e8f5e9; color:#2e7d32; padding:1px 6px; border-radius:10px; margin-left:4px">✓ In library</span>'
-            : '';
-        const previewBtn = t.preview_url
-            ? `<a href="#" onclick="playDiscoveryPreview(${JSON.stringify(t).replace(/"/g, '&quot;')}); return false;"
-                  class="green-text" style="font-size:12px">▶ Preview</a>`
-            : '<span class="grey-text" style="font-size:11px">No preview</span>';
-
-        return `
-        <div style="width:180px; flex-shrink:0; background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.12); overflow:hidden">
-            <img src="${t.albumArt}" alt="" style="width:100%; height:80px; object-fit:cover; display:block">
-            <div style="padding:8px">
-                <div class="truncate" style="font-weight:600; font-size:12px; line-height:1.3">${escapeHtml(t.name)}${badge}</div>
-                <div class="truncate grey-text" style="font-size:11px">${escapeHtml(t.Artist)}</div>
-                <div style="margin-top:6px; display:flex; justify-content:space-between; align-items:center">
-                    ${previewBtn}
-                    <a href="${t.spotifyUrl}" target="_blank" class="grey-text" style="font-size:11px" title="Open in Spotify">↗</a>
-                </div>
-            </div>
-        </div>`;
-    }).join('');
-
-    panel.innerHTML = `
-        <div style="border-top:1px solid #eee; padding:16px 0 8px">
-            <b style="font-size:14px">Discovered Songs</b>
-            <span class="grey-text" style="font-size:12px; margin-left:8px">seeded from ${seedCount} selected songs</span>
-        </div>
-        <div style="display:flex; flex-wrap:wrap; gap:10px; padding-bottom:24px">${cards}</div>`;
-}
-
-function playDiscoveryPreview(track) {
-    // Delegate to the existing preview player in player.js if available
-    if (typeof playSong === 'function') {
-        playSong(track, [track]);
-    } else if (track.preview_url) {
-        const audio = document.getElementById('discoveryAudio') || (() => {
-            const a = document.createElement('audio');
-            a.id = 'discoveryAudio';
-            document.body.appendChild(a);
-            return a;
-        })();
-        audio.src = track.preview_url;
-        audio.play();
     }
 }
 

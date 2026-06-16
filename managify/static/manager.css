@@ -2,6 +2,31 @@ header,
 main,
 footer {
     padding-left: 300px;
+    transition: padding-left 0.3s ease;
+}
+
+#slide-out {
+    transition: transform 0.3s ease, visibility 0.3s ease;
+}
+
+#slide-out.sidenav-collapsed {
+    transform: translateX(-300px);
+    visibility: hidden;
+}
+
+body.sidenav-collapsed header,
+body.sidenav-collapsed main,
+body.sidenav-collapsed footer {
+    padding-left: 0;
+}
+
+body.sidenav-collapsed .player {
+    display: none;
+}
+
+#sidenav-toggle-btn {
+    padding: 0 16px;
+    line-height: 64px;
 }
 
 #tableContainer {

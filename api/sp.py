@@ -56,12 +56,24 @@ def create_playlist():
     return createPlaylist(session, json.loads(request.data)), 200
 
 
-@bp.route('/discover', methods=['POST'])
-def discover():
-    from spotify.spotify import getRecommendations
+
+@bp.route('/currently_playing', methods=['GET'])
+def currently_playing():
+    from spotify.spotify import getCurrentlyPlaying
+    result = getCurrentlyPlaying(session)
+    if result is None:
+        return jsonify(None), 204
+    return jsonify(result), 200
+
+
+@bp.route('/search', methods=['GET'])
+def search_playlists():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify([]), 200
+    from spotify.spotify import searchPlaylists
     import spotipy
     try:
-        result = getRecommendations(session, json.loads(request.data))
-        return jsonify(result), 200
+        return jsonify(searchPlaylists(session, query)), 200
     except spotipy.exceptions.SpotifyException as e:
         return jsonify({"error": str(e)}), e.http_status or 500

@@ -165,7 +165,7 @@ FILTERABLE = {
 ## Known issues / gotchas
 1. **`isTrackValid()` requires `preview_url`** (`spotify/spotify.py:119–121`): filters out any track without a preview URL. Drops many valid tracks (regional restrictions, local files). The player already handles null `preview_url` gracefully.
 
-2. **`audio_features` Spotify deprecation**: Spotify deprecated the `audio-features` endpoint for apps created after Nov 2024. Apps created before this date still have access but it may be revoked. Test with `sp.audio_features(['3n3Ppam7vgaVa1iaRUIOKE'])` — if it returns `None` values or 403, the endpoint is blocked for this app.
+2. **Several Spotify endpoints deprecated for new apps**: `GET /audio-features/{id}`, `GET /audio-analysis/{id}`, and `GET /recommendations` all return 403 for apps created after November 2024. There are **no replacement endpoints**. Features that depended on these (`audio_features` columns in the table, the Analysis tab, the Discover button) have been removed from the UI and backend entirely rather than showing permanent error states.
 
 3. **Fast path skips features**: `getTracksBasic` (current default) returns no audio features. The feature columns in the DataTable are currently never populated because the fast path is used. The full `/api/sp/playlist` endpoint is wired but not called.
 
@@ -176,6 +176,22 @@ FILTERABLE = {
 6. **Spotipy instantiated per call**: Each function in `spotify.py` creates `spotipy.Spotify(auth=accessToken)` inline. This is fine functionally but slightly wasteful.
 
 7. **Flask-Caching only on `getAllPlaylistInfos`**: Track data and features are not server-cached; repeated calls re-fetch from Spotify. Client-side `localStorage` caching for features is the planned improvement.
+
+## Spotify Web API rules
+
+These rules apply to all Spotify API usage in this project:
+
+- **OpenAPI spec**: All endpoint paths, parameters, and response schemas must match the official spec at `https://developer.spotify.com/reference/web-api/open-api-schema.yaml`. Do not guess endpoints or field names.
+- **Auth flow**: Use the **Authorization Code flow** (backend handles the secret). Never use the deprecated Implicit Grant flow. Client Credentials is only acceptable for public, non-user data.
+- **Redirect URIs**: Use HTTPS in production. For local dev use `http://127.0.0.1:5000/auth/callback` — **not** `http://localhost` (Spotify rejects `localhost`). No wildcard URIs.
+- **Scopes**: Request only the minimum scopes needed. Current required scopes are documented in `example.config.json`. Do not add scopes preemptively.
+- **Token management**: Tokens are stored in the Flask session and refreshed by Spotipy automatically via `SpotifyOAuth`. The client secret must never appear in frontend code.
+- **Rate limits**: On HTTP 429 responses, read the `Retry-After` header and wait that many seconds before retrying. No tight loops or immediate retries.
+- **Deprecated endpoints**: Do not use deprecated endpoints. `GET /audio-features` and `GET /audio-analysis` are deprecated — see Known issues #2. Use `/playlists/{id}/items` (not `/playlists/{id}/tracks`).
+- **Error handling**: All Spotify HTTP errors are caught as `spotipy.exceptions.SpotifyException`. Return the status code and message to the frontend rather than swallowing errors silently (except expected 403s from deprecated endpoints).
+- **Caching**: Do not cache Spotify content beyond immediate use. The existing `@cache.memoize(3600)` on `getAllPlaylistInfos` is acceptable. Audio features are cached client-side in `localStorage` — these must be invalidated if the user revokes access.
+- **Attribution**: Always attribute content to Spotify when displaying track/artist/album data in the UI.
+- **No ML training**: Do not use Spotify API data to train machine learning models.
 
 ## Planned features (see PLAN.md)
 - Two-phase loading: fast table first, features loaded async in background

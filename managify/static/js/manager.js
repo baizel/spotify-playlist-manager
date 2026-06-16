@@ -21,12 +21,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalInstance = M.Modal.init(modalElem, { onCloseEnd: handleFilterChange });
     M.Tabs.init(document.querySelector('.tabs'), {
         onShow: function (tabContent) {
+            if (tabContent.id === 'test1') {
+                const table = getTableData();
+                if (table) table.columns.adjust();
+            }
             if (tabContent.id === 'test2') onVisualsTabActivated();
+            if (tabContent.id === 'test3') onWheelTabActivated();
         }
     });
     setEditModeCheckbox();
     updateFilterOptions();
     initPlaylistSearch();
+    initSpotifySearch();
+    if (localStorage.getItem('sidenavCollapsed') === '1') {
+        document.getElementById('slide-out').classList.add('sidenav-collapsed');
+        document.body.classList.add('sidenav-collapsed');
+    }
 });
 
 function onVisualsTabActivated() {
@@ -36,10 +46,17 @@ function onVisualsTabActivated() {
     if (hasData && typeof refreshVisuals === 'function') refreshVisuals();
 }
 
+function onWheelTabActivated() {
+    const hasData = storedData && storedData.data && storedData.data.length > 0;
+    document.getElementById('wheel-empty').style.display = hasData ? 'none' : 'flex';
+    document.getElementById('wheel-content').style.display = hasData ? 'block' : 'none';
+    if (hasData && typeof refreshWheel === 'function') refreshWheel();
+}
+
 function initPlaylistSearch() {
     $('#autocomplete-input').on('keyup', function () {
         const searchTerm = this.value.toLowerCase();
-        $('.playlist-content').each(function () {
+        $('.local-playlist').each(function () {
             const playlistName = $(this).find('p').text().toLowerCase();
             if (playlistName.includes(searchTerm)) {
                 $(this).show();
@@ -48,6 +65,52 @@ function initPlaylistSearch() {
             }
         });
     });
+}
+
+function toggleSidenav() {
+    const isCollapsed = document.getElementById('slide-out').classList.toggle('sidenav-collapsed');
+    document.body.classList.toggle('sidenav-collapsed', isCollapsed);
+    localStorage.setItem('sidenavCollapsed', isCollapsed ? '1' : '0');
+}
+
+let _searchController = null;
+
+function initSpotifySearch() {
+    const input = document.getElementById('playlist-search-input');
+    if (!input) return;
+    input.addEventListener('input', debounce(function () {
+        const q = this.value.trim();
+        if (!q) { document.getElementById('playlist-search-results').innerHTML = ''; return; }
+        if (_searchController) _searchController.abort();
+        _searchController = new AbortController();
+        fetch(`/api/sp/search?q=${encodeURIComponent(q)}`, { signal: _searchController.signal })
+            .then(r => r.json())
+            .then(renderSearchResults)
+            .catch(err => { if (err.name !== 'AbortError') console.warn('Search failed', err); });
+    }, 400));
+}
+
+function renderSearchResults(playlists) {
+    const container = document.getElementById('playlist-search-results');
+    if (!playlists || !playlists.length) {
+        container.innerHTML = '<li style="padding:8px 16px;color:#999;font-size:13px">No results</li>';
+        return;
+    }
+    container.innerHTML = playlists.map(pl => {
+        const img = (pl.image && pl.image.url) ? pl.image.url : '';
+        const name = pl.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `<li class="playlist-content" onclick="toggleAndUpdateTable('${pl.id}','${name}','True')">
+                    <div id="${pl.id}" class="collection-item avatar valign-wrapper">
+                        <img src="${img}" alt="" class="circle">
+                        <p>${pl.name}</p>
+                    </div>
+                </li>`;
+    }).join('');
+}
+
+function debounce(fn, delay) {
+    let t;
+    return function (...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), delay); };
 }
 
 function setEditModeCheckbox() {
@@ -181,7 +244,6 @@ async function updateTable(forceUseLastFetchedData) {
         showFilterByGenreOptions();
         applyGenreFilter();
         drawTable(() => {
-            initSearchBar();
             setEditModeCheckbox();
             onEditMode();
             hideFilterColumns();
@@ -228,8 +290,9 @@ async function loadSecondaryDataAsync() {
         hideFilterColumns();
     }
 
-    // Notify visuals tab if it's active
+    // Notify visuals + wheel tabs if active
     if (typeof refreshVisuals === 'function') refreshVisuals();
+    if (typeof refreshWheel === 'function') refreshWheel();
 }
 
 async function fetchArtists(artistIds) {
@@ -308,6 +371,8 @@ function drawTable(onDraw) {
             }
         },
         "rowCallback": function (row, data, displayNum, displayIndex, dataIndex) {
+            const imageUrl = getImageUrl(data).url;
+            formatSongColumn(row, 0, { imageUrl, songName: data.Song });
         },
         "drawCallback": draw,
         language: {
@@ -325,8 +390,11 @@ function drawTable(onDraw) {
     // storedData.columns = JSON.parse(JSON.stringify([...existingColumns]));
     // const optionWithData = Object.assign(options, storedData);
     // const table = $(prefixHash(SONG_TABLE_ID)).DataTable(optionWithData);
-    const optionWithData = Object.assign(options, storedData)
-    optionWithData.columns.push(...filterOptions)
+    // Strip any filterOption columns already in storedData.columns (from a previous draw)
+    const filterDataKeys = new Set(filterOptions.map(f => f.data));
+    storedData.columns = storedData.columns.filter(c => !filterDataKeys.has(c.data));
+    const optionWithData = Object.assign(options, storedData);
+    optionWithData.columns.push(...filterOptions);
     deleteTableFromDOM()
     const table = $(prefixHash(SONG_TABLE_ID)).DataTable(optionWithData);
     $(`${prefixHash(SONG_TABLE_ID)} tbody`).on('click', 'tr', function (element) {
@@ -405,14 +473,15 @@ async function getPlaylistTracks(playlists, cachePolicy) {
 
 function toggleToList(playlist) {
     const isPlaylistAlreadyChosen = chosenPlaylists.some(plst => plst.id === playlist.id)
+    const el = document.getElementById(playlist.id);
     if (isPlaylistAlreadyChosen) {
         chosenPlaylists = chosenPlaylists.filter(function (el) {
             return el.id !== playlist.id;
         })
-        document.getElementById(playlist.id).classList.remove("added-playlist");
+        if (el) el.classList.remove("added-playlist");
     } else {
         chosenPlaylists.push(playlist)
-        document.getElementById(playlist.id).classList.add("added-playlist");
+        if (el) el.classList.add("added-playlist");
     }
 }
 
@@ -473,13 +542,12 @@ function hideLoader() {
     document.getElementById("data-loader").style.visibility = "hidden";
 }
 
-function initSearchBar() {
-    $('.search-toggle').click(function () {
-        if ($('.hiddensearch').css('display') === 'none')
-            $('.hiddensearch').slideDown();
-        else
-            $('.hiddensearch').slideUp();
-    });
+function toggleTableSearch() {
+    const wrapper = document.querySelector('.hiddensearch');
+    if (!wrapper) return;
+    const isHidden = wrapper.style.display === 'none' || wrapper.style.display === '';
+    wrapper.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) wrapper.querySelector('input')?.focus();
 }
 
 function setReadOnlyCheckBoxes() {
